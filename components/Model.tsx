@@ -1,33 +1,33 @@
-import { useAnimations, useGLTF, useScroll } from "@react-three/drei"
-import { useFrame } from "@react-three/fiber"
-import { useEffect, useRef } from "react"
-import { Group } from "three"
+'use client'; // This ensures the component runs on the client side
 
-useGLTF.preload("/robot_playground.glb")
+import React from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera, useGLTF } from '@react-three/drei';
+import { PerspectiveCameraProps } from '@react-three/fiber';
 
-export default function Model() {
-  const group = useRef<Group>(null)
-  const { nodes, materials, animations, scene } = useGLTF(
-    "/robot_playground.glb"
-  )
-  const { actions, clips } = useAnimations(animations, scene)
-  const scroll = useScroll()
+const Model = () => {
+  const { scene } = useGLTF('/space_nebula_hdri_panorama_360_skydome.glb'); // Replace with your model's path
 
-  useEffect(() => {
-    console.log(actions)
-    //@ts-ignore
-    actions["Experiment"].play().paused = true
-  }, [])
-  useFrame(
-    () =>
-      //@ts-ignore
-      (actions["Experiment"].time =
-        //@ts-ignore
-        (actions["Experiment"].getClip().duration * scroll.offset) / 4)
-  )
   return (
-    <group ref={group}>
-      <primitive object={scene} />
-    </group>
-  )
-}
+    <Canvas style={{ height: '100vh', width: '100vw' }}>
+      {/* Adjust the camera settings */}
+      <PerspectiveCamera makeDefault fov={50} position={[0, 0, 10]} />
+      
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} intensity={1} />
+      
+      {/* The model */}
+      <primitive object={scene} scale={1} />
+      
+      {/* OrbitControls */}
+      <OrbitControls
+        enableZoom={true}
+        minDistance={5} // Minimum zoom-out distance
+        maxDistance={20} // Maximum zoom-in distance
+        target={[0, 0, 0]} // Focus point of the camera
+      />
+    </Canvas>
+  );
+};
+
+export default Model;
