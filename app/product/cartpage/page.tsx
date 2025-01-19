@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Minus, Plus, Trash2, Info } from 'lucide-react'
+import { Minus, Plus, Trash2, Info, ShoppingCartIcon } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -187,7 +187,7 @@ export default function ShoppingCart() {
                         className="shrink-0 h-8 w-8 rounded-full bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
                         onClick={() => addToCart(product)}
                       >
-                  <ShoppingCart  />
+                  <ShoppingCartIcon className='h-4 w-4'  />
                   </Button>
                     </div>
                   ))}
