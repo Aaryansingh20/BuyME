@@ -172,6 +172,7 @@ export default function Navbar() {
                 </div>
                 <span className="sr-only uppercase tracking-wider">Wishlist</span>
               </Button>
+              <Link href="/product/cartpage">
               <Button variant="ghost" size="icon" className="text-white hover:text-gray-300 hover:bg-transparent">
                 <div className="relative">
                   <ShoppingCart className="h-5 w-5" />
@@ -181,6 +182,7 @@ export default function Navbar() {
                 </div>
                 <span className="sr-only uppercase tracking-wider">Cart</span>
               </Button>
+              </Link>
               <span className="text-sm hidden sm:inline-block text-white uppercase tracking-wider">$0.00</span>
             </div>
           </div>
