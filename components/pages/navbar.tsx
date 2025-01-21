@@ -164,15 +164,6 @@ export default function Navbar() {
                 <span className="sr-only uppercase tracking-wider">Account</span>
               </Button>
               </Link>
-              <Button variant="ghost" size="icon" className="text-white hover:text-gray-300 hover:bg-transparent">
-                <div className="relative">
-                  <Heart className="h-5 w-5" />
-                  <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-black">
-                    0
-                  </span>
-                </div>
-                <span className="sr-only uppercase tracking-wider">Wishlist</span>
-              </Button>
               <Link href="/product/cartpage">
               <Button variant="ghost" size="icon" className="text-white hover:text-gray-300 hover:bg-transparent">
                 <div className="relative">
