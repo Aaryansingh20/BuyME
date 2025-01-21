@@ -232,7 +232,7 @@ export default function ShoppingCart() {
                 
                 <div className="mt-6 text-sm text-zinc-400">
                   <div className="flex items-center gap-2 mb-2">
-                    <span>90 Day Limited Warranty against manufacturer&apos;s defects</span>
+                    <span>10 Day Limited Warranty against manufacturer&apos;s defects</span>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
@@ -256,7 +256,7 @@ export default function ShoppingCart() {
       </div>
     </div>
       {/* Footer */}
-      <footer className="border-t border-zinc-800">
+      <footer className="border-t text-white  border-zinc-800">
         <div className="container mx-auto max-w-7xl p-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>

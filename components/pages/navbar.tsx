@@ -158,11 +158,12 @@ export default function Navbar() {
               >
                 {isSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
               </Button>
-
+              <Link href='/product/profile'>
               <Button variant="ghost" size="icon" className="text-white hover:text-gray-300 hover:bg-transparent">
                 <User className="h-5 w-5" />
                 <span className="sr-only uppercase tracking-wider">Account</span>
               </Button>
+              </Link>
               <Button variant="ghost" size="icon" className="text-white hover:text-gray-300 hover:bg-transparent">
                 <div className="relative">
                   <Heart className="h-5 w-5" />
