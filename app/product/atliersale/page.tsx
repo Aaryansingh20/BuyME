@@ -15,6 +15,7 @@ type Category = 'T-Shirts' | 'Jeans' | 'Jackets' | 'Hoodies' | 'Sweaters' | 'Acc
 type Review = { name: string; rating: number; comment: string }
 type Product = { name: string; price: number; image: string }
 
+
 export default function AtierSale() {
   const [selectedSize, setSelectedSize] = useState<Size>('m')
   const [quantity, setQuantity] = useState(1)

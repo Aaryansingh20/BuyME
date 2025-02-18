@@ -12,8 +12,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useCart } from "@/hooks/cartcontext"
 
 export default function Navbar() {
+  const { cart } = useCart();
+
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   return (
@@ -169,7 +172,7 @@ export default function Navbar() {
                 <div className="relative">
                   <ShoppingCart className="h-5 w-5" />
                   <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-black">
-                    0
+                  {cart}
                   </span>
                 </div>
                 <span className="sr-only uppercase tracking-wider">Cart</span>

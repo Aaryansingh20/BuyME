@@ -7,19 +7,18 @@ import BestsellerSection from "@/components/pages/bestseller"
 
 export default function Home() {
   return (
-    <div className="h-screen bg-black w-full">
+    <main className="min-h-screen bg-black w-full">
       <Navbar />
-      <HeroSectionWithReviews/>
-      <br/>
-      <br/>
-      <br/>
-      <div className="space-y-24">
-      <BestsellerSection/>
-      <FeaturesSection/>
-      <ProductGrid/>
-      <FooterServices/>
+      <HeroSectionWithReviews />
+      <div className="container mx-auto px-4 py-16">
+        <div className="space-y-32">
+          <BestsellerSection />
+          <FeaturesSection />
+          <ProductGrid />
+          <FooterServices />
+        </div>
       </div>
-    </div>
+    </main>
   )
 }
 

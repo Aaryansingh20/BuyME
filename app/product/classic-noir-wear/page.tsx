@@ -18,7 +18,7 @@ type Review = { name: string; rating: number; comment: string; date: string }
 type Product = { name: string; price: number; image: string }
 
 function Model() {
-  const { scene } = useGLTF("/one-piece.glb")
+  const { scene } = useGLTF("/3dmodel/one-piece.glb")
   return <primitive object={scene} scale={2} position={[0, -1.5, 0]} />
 }
 

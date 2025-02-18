@@ -11,6 +11,7 @@ import Link from "next/link"
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import urbanStyle from "@/public/images/two-3view.jpg"
+import { useCart } from "@/hooks/cartcontext"
 
 
 type Size = 's' | 'm' | 'l'
@@ -19,11 +20,12 @@ type Review = { name: string; rating: number; comment: string; date: string }
 type Product = { name: string; price: number; image: string }
 
 function Model() {
-  const { scene } = useGLTF("/hoodie.glb")
+  const { scene } = useGLTF("/3dmodel/hoodie.glb")
   return <primitive object={scene} scale={2} position={[0, -1.5, 0]} />
 }
 
 export default function UrbanStyleCoat() {
+  const { addToCart } = useCart();
   const [selectedSize, setSelectedSize] = useState<Size>('m')
   const [quantity, setQuantity] = useState(1)
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description')
@@ -207,7 +209,7 @@ export default function UrbanStyleCoat() {
 
               <div className="pt-4 flex flex-col gap-3">
                 <div className="grid grid-cols-3 gap-3">
-                  <Button className="w-full bg-zinc-700 hover:bg-zinc-600 text-white">
+                  <Button onClick={() => addToCart()} className="w-full bg-zinc-700 hover:bg-zinc-600 text-white">
                     <ShoppingCart className="h-5 w-5" />
                   </Button>
                   <Button className="w-full bg-zinc-700 hover:bg-zinc-600 text-white">Buy now</Button>
@@ -348,7 +350,7 @@ export default function UrbanStyleCoat() {
                 <h3 className="text-white font-medium mb-2">{product.name}</h3>
                 <div className="flex justify-between items-center">
                   <span className="text-white">${product.price.toFixed(2)}</span>
-                  <Button variant="secondary" size="icon">
+                  <Button onClick={() => addToCart()} variant="secondary" size="icon">
                     <ShoppingCart className="h-4 w-4" />
                   </Button>
                 </div>
