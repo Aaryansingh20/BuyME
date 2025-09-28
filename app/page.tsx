@@ -4,10 +4,12 @@ import HeroSectionWithReviews from "@/components/pages/hero-section"
 import ProductGrid from "@/components/pages/listitem"
 import Navbar from "@/components/pages/navbar"
 import BestsellerSection from "@/components/pages/bestseller"
+import VirtualTryOn from "@/components/ui/virtual_tryon"
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-black w-full">
+      <VirtualTryOn/>
       <Navbar />
       <HeroSectionWithReviews />
       <div className="container mx-auto px-4 py-16">
