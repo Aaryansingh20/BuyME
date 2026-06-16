@@ -9,7 +9,7 @@ import VirtualTryOn from "@/components/ui/virtual_tryon"
 export default function Home() {
   return (
     <main className="min-h-screen bg-black w-full">
-      <VirtualTryOn/>
+      {/* <VirtualTryOn/> */}
       <Navbar />
       <HeroSectionWithReviews />
       <div className="container mx-auto px-4 py-16">

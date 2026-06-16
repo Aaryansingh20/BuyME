@@ -1,19 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Bell, CreditCard, Heart, Home, LogOut, Package, Settings, ShoppingBag, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  mockUser,
-  mockOrders,
-  mockWishlist,
-  mockAddresses,
-  mockPaymentMethods,
-  mockNotifications,
-} from "@/public/data/mock"
+
+type OrderView = { id: string; fullId: string; date: string; items: string[]; total: number; status: string }
 import { ProfileInfo } from "@/components/ui/profile-info"
 import { OrderHistory } from "@/components/ui/order"
 import { Wishlist } from "@/components/ui/wishlist"
@@ -22,21 +16,102 @@ import { PaymentMethods } from "@/components/ui/payment"
 import { Notifications } from "@/components/ui/notification"
 import { SecuritySettings } from "@/components/ui/security"
 import Navbar from "@/components/pages/navbar"
-import Link from "next/link"
+import FooterServices from "@/components/pages/footer"
+import Image from "next/image"
+import profileBg from "@/public/auth-bg.jpg"
 
-type User = {
-  id: string
-  name: string
-  email: string
-  phone: string
-  avatar: string
-  address: string
-  loyaltyPoints?: number
-}
+const emptyUser = { name: "", email: "", phone: "", address: "", avatar: "", dateOfBirth: "", gender: "" }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(mockUser)
+  const [user, setUser] = useState(emptyUser)
+  const [orders, setOrders] = useState<OrderView[]>([])
   const [activeTab, setActiveTab] = useState("personal-info")
+
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab")
+    const valid = ["personal-info", "orders", "wishlist", "addresses", "payment", "notifications", "security"]
+    if (tab && valid.includes(tab)) setActiveTab(tab)
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          const u = data.user
+          setUser({
+            name: u.name ?? "",
+            email: u.email ?? "",
+            phone: u.phone ?? "",
+            address: u.address ?? "",
+            avatar: u.avatar ?? "",
+            dateOfBirth: u.dateOfBirth ?? "",
+            gender: u.gender ?? "",
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const loadOrders = useCallback(() => {
+    type ApiOrder = {
+      id: string
+      createdAt: string
+      total: number
+      status: string
+      items: { name: string }[]
+    }
+    return fetch("/api/orders")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.orders) {
+          setOrders(
+            (data.orders as ApiOrder[]).map((o) => ({
+              id: o.id.slice(-6).toUpperCase(),
+              fullId: o.id,
+              date: new Date(o.createdAt).toLocaleDateString(),
+              items: o.items.map((i) => i.name),
+              total: o.total,
+              status: o.status,
+            }))
+          )
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
+
+  const cancelOrder = async (fullId: string) => {
+    const res = await fetch("/api/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: fullId }),
+    })
+    if (res.ok) {
+      await loadOrders()
+      return { ok: true as const }
+    }
+    const data = await res.json().catch(() => ({}))
+    return { ok: false as const, error: data.error ?? "Could not cancel order" }
+  }
+
+  const updateProfile = async (updated: Partial<typeof emptyUser>) => {
+    setUser((prev) => ({ ...prev, ...updated }))
+    await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    })
+  }
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    // Full reload so the cart/session state resets for the next user.
+    window.location.assign("/login")
+  }
 
   const sidebarItems = [
     { icon: User, label: "Personal Info", value: "personal-info" },
@@ -49,14 +124,24 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="bg-black text-zinc-100 min-h-screen">
+    <div className="relative min-h-screen text-zinc-100">
+      {/* Fixed full-bleed wallpaper behind the content (cards stay translucent on top). */}
+      <div className="fixed inset-0">
+        <Image src={profileBg} alt="" fill priority className="object-cover object-center" />
+        {/* Lighter, tinted overlay so the wallpaper shows through with some depth. */}
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/50 via-black/35 to-zinc-900/55" />
+      </div>
+
+      <div className="relative z-10">
       <Navbar />
       <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <Card className="lg:w-64 shrink-0 bg-zinc-900 border-zinc-800 shadow-lg">
+        <div className="flex flex-col lg:flex-row gap-6 lg:h-[72vh]">
+          <Card className="lg:w-64 shrink-0 bg-white/[0.04] border-white/10 lg:flex lg:flex-col lg:h-full">
             <CardHeader>
-              <CardTitle className="text-xl text-white">Account</CardTitle>
-              <CardDescription className="text-zinc-400">Manage your account settings</CardDescription>
+              <CardTitle className="text-lg uppercase tracking-wider text-white">Account</CardTitle>
+              <CardDescription className="text-xs uppercase tracking-wider text-gray-400">
+                Manage your account settings
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <nav className="flex flex-col">
@@ -64,11 +149,11 @@ export default function ProfilePage() {
                   {sidebarItems.map((item) => (
                     <Button
                       key={item.value}
-                      variant={activeTab === item.value ? "secondary" : "ghost"}
-                      className={`justify-start h-12 text-left px-4 rounded-none flex-shrink-0 ${
+                      variant="ghost"
+                      className={`justify-start h-12 text-left px-4 rounded-none flex-shrink-0 text-xs uppercase tracking-wider ${
                         activeTab === item.value
-                          ? "bg-zinc-800 hover:bg-zinc-800 text-zinc-100"
-                          : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                          ? "bg-white/10 text-white hover:bg-white/10"
+                          : "text-gray-400 hover:bg-white/5 hover:text-white"
                       }`}
                       onClick={() => setActiveTab(item.value)}
                     >
@@ -77,11 +162,12 @@ export default function ProfilePage() {
                     </Button>
                   ))}
                 </div>
-                <Separator className="my-2 bg-zinc-800 lg:hidden" />
+                <Separator className="my-2 bg-white/10 lg:hidden" />
                 <div className="flex lg:hidden">
                   <Button
                     variant="ghost"
-                    className="justify-start h-12 text-left px-4 rounded-none text-red-400 hover:bg-zinc-800 hover:text-red-300 flex-1"
+                    onClick={handleLogout}
+                    className="justify-start h-12 text-left px-4 rounded-none text-xs uppercase tracking-wider text-red-400 hover:bg-red-500/10 hover:text-red-300 flex-1"
                   >
                     <LogOut className="mr-2 h-5 w-5" />
                     <span>Log Out</span>
@@ -89,11 +175,12 @@ export default function ProfilePage() {
                 </div>
               </nav>
             </CardContent>
-            <div className="hidden lg:block">
-              <Separator className="my-2 bg-zinc-800" />
+            <div className="hidden lg:block lg:mt-auto">
+              <Separator className="my-2 bg-white/10" />
               <Button
                 variant="ghost"
-                className="justify-start h-12 text-left px-4 rounded-none text-red-400 hover:bg-zinc-800 hover:text-red-300 w-full"
+                onClick={handleLogout}
+                className="justify-start h-12 text-left px-4 rounded-none text-xs uppercase tracking-wider text-red-400 hover:bg-red-500/10 hover:text-red-300 w-full"
               >
                 <LogOut className="mr-2 h-5 w-5" />
                 <span>Log Out</span>
@@ -101,7 +188,7 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          <Card className="flex-1 bg-zinc-900 border-zinc-800 shadow-lg overflow-hidden">
+          <Card className="flex-1 bg-transparent border-none overflow-hidden lg:h-full">
             <CardContent className="p-0 h-full">
               <Tabs value={activeTab} className="h-full flex flex-col">
                 <TabsList className="hidden">
@@ -111,27 +198,24 @@ export default function ProfilePage() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                <div className="flex-1 overflow-y-auto scrollbar-hide p-6">
+                <div className="h-[68vh] min-h-[480px] lg:h-full overflow-y-auto scrollbar-hide [&_[role=tabpanel]]:h-full [&_[role=tabpanel]>*]:min-h-full">
                   <TabsContent value="personal-info" className="mt-0 h-full">
-                    <ProfileInfo
-                      user={user}
-                      setUser={(updatedUser) => setUser((prev) => ({ ...prev, ...updatedUser }))}
-                    />
+                    <ProfileInfo key={user.email || "loading"} user={user} setUser={updateProfile} />
                   </TabsContent>
                   <TabsContent value="orders" className="mt-0 h-full">
-                    <OrderHistory orders={mockOrders} />
+                    <OrderHistory orders={orders} onCancel={cancelOrder} />
                   </TabsContent>
                   <TabsContent value="wishlist" className="mt-0 h-full">
-                    <Wishlist items={mockWishlist} />
+                    <Wishlist />
                   </TabsContent>
                   <TabsContent value="addresses" className="mt-0 h-full">
-                    <AddressBook addresses={mockAddresses} />
+                    <AddressBook />
                   </TabsContent>
                   <TabsContent value="payment" className="mt-0 h-full">
-                    <PaymentMethods methods={mockPaymentMethods} />
+                    <PaymentMethods />
                   </TabsContent>
                   <TabsContent value="notifications" className="mt-0 h-full">
-                    <Notifications notifications={mockNotifications} />
+                    <Notifications />
                   </TabsContent>
                   <TabsContent value="security" className="mt-0 h-full">
                     <SecuritySettings />
@@ -142,113 +226,8 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
-      <footer className="border-t border-zinc-800">
-        <div className="container mx-auto max-w-7xl p-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-mono uppercase mb-4">BuyME</h3>
-              <p className="text-sm text-zinc-400">
-                We make the difference. Let&apos;s create & make the future together here right now.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-mono uppercase mb-4">Explore</h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    About us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Our brand
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Collection 2023
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-mono uppercase mb-4">Visit</h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>Something South Carolina</li>
-                <li>5th Avenue, #55582</li>
-                <li>Brooklyn, 32</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-mono uppercase mb-4">Services</h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Shipping
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Our product
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Reviews
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Returning
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-zinc-800">
-            <p className="text-sm text-zinc-400">© BuyME</p>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <Link href="#" className="text-zinc-400 hover:text-white transition-colors">
-                <span className="sr-only">YouTube</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                </svg>
-              </Link>
-              <Link href="#" className="text-zinc-400 hover:text-white transition-colors">
-                <span className="sr-only">Twitter</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                </svg>
-              </Link>
-              <Link href="#" className="text-zinc-400 hover:text-white transition-colors">
-                <span className="sr-only">GitHub</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
-              <Link href="#" className="text-zinc-400 hover:text-white transition-colors">
-                <span className="sr-only">Instagram</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fillRule="evenodd"
-                    d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <FooterServices />
+      </div>
     </div>
   )
 }

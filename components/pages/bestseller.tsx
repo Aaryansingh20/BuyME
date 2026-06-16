@@ -17,6 +17,7 @@ export default function BestsellerSection() {
                   src={urbanClothes1 || "/placeholder.svg"}
                   alt="Dark series jacket"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                 />
               </div>
@@ -34,6 +35,7 @@ export default function BestsellerSection() {
                   src={urbanClothes2 || "/placeholder.svg"}
                   alt="Urban style coat"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                 />
               </div>
@@ -51,6 +53,7 @@ export default function BestsellerSection() {
                   src={urbanClothes3 || "/placeholder.svg"}
                   alt="Classic noir wear"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                 />
               </div>

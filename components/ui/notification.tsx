@@ -1,73 +1,101 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { Bell } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface Notification {
-  id: string;
-  message: string;
-  date: string;
-  read: boolean;
+  id: string
+  message: string
+  read: boolean
+  createdAt: string
 }
 
-interface NotificationsProps {
-  notifications: Notification[];
-}
+export function Notifications() {
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
 
-export function Notifications({ notifications }: NotificationsProps) {
-  const [notificationsState, setNotifications] = useState<Notification[]>(notifications);
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.notifications && setNotifications(data.notifications))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
-  const toggleNotificationStatus = (id: string) => {
-    setNotifications(notificationsState.map(notif =>
-      notif.id === id ? { ...notif, read: !notif.read } : notif
-    ));
-  };
+  const toggleRead = async (id: string, read: boolean) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read } : n)))
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, read }),
+    })
+  }
+
+  const markAllRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true }),
+    })
+  }
+
+  const unread = notifications.filter((n) => !n.read).length
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 shadow-lg">
+    <Card className="bg-white/[0.04] border-white/10">
       <CardHeader>
-        <CardTitle className="text-2xl text-zinc-100">Notifications</CardTitle>
-        <CardDescription className="text-zinc-400">Manage your notification preferences</CardDescription>
+        <CardTitle className="text-xl sm:text-2xl uppercase tracking-wider text-white">
+          Notifications{unread > 0 ? ` (${unread})` : ""}
+        </CardTitle>
+        <CardDescription className="text-xs uppercase tracking-wider text-gray-400">
+          Your account activity and updates
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {notificationsState.map((notification) => (
-            <div key={notification.id} className="flex items-center justify-between py-2">
-              <div>
-                <p className="font-medium text-zinc-100">{notification.message}</p>
-                <p className="text-sm text-zinc-400">{notification.date}</p>
-              </div>
-              <Switch 
-                checked={!notification.read}
-                onCheckedChange={() => toggleNotificationStatus(notification.id)}
-              />
+        {loading ? (
+          <p className="text-sm uppercase tracking-wider text-gray-500">Loading…</p>
+        ) : notifications.length === 0 ? (
+          <div className="flex flex-col items-center py-10 text-center text-gray-500">
+            <Bell className="h-8 w-8" />
+            <p className="mt-3 text-sm uppercase tracking-wider">No notifications yet.</p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="flex items-center justify-between gap-4 border-b border-white/10 py-3 last:border-0"
+                >
+                  <div>
+                    <p className={`text-sm font-medium ${notification.read ? "text-gray-400" : "text-white"}`}>
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={!notification.read}
+                    onCheckedChange={() => toggleRead(notification.id, notification.read)}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="mt-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="marketing-emails" className="text-zinc-300">Marketing Emails</Label>
-            <Switch id="marketing-emails" />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="order-updates" className="text-zinc-300">Order Updates</Label>
-            <Switch id="order-updates" defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="price-alerts" className="text-zinc-300">Price Alerts</Label>
-            <Switch id="price-alerts" />
-          </div>
-        </div>
-        <Button 
-          onClick={() => setNotifications(notificationsState.map(notif => ({ ...notif, read: true })))}
-          className="mt-6 bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-          size="sm"
-        >
-          Mark All as Read
-        </Button>
+            <Button
+              onClick={markAllRead}
+              className="mt-6 rounded-sm bg-white text-black hover:bg-gray-200 uppercase tracking-wider text-xs"
+              size="sm"
+            >
+              Mark All as Read
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   )
 }
-

@@ -1,106 +1,170 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { useState, FormEvent } from "react";
+"use client"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Eye, EyeOff } from "lucide-react"
+import { useState, FormEvent } from "react"
+
+const inputClass =
+  "rounded-sm bg-zinc-900/80 text-white border-zinc-800 placeholder:text-gray-500 focus-visible:ring-white text-sm"
+const labelClass = "text-xs uppercase tracking-wider text-gray-300"
 
 export function SecuritySettings() {
-  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" })
+  const [showPassword, setShowPassword] = useState(false)
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [status, setStatus] = useState<{ type: "error" | "success"; message: string } | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handlePasswordChange = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log("Password change requested", passwordData);
-    setPasswordData({ current: "", new: "", confirm: "" });
-  };
+  const inputType = showPassword ? "text" : "password"
+
+  const handlePasswordChange = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setStatus(null)
+
+    if (passwordData.new !== passwordData.confirm) {
+      setStatus({ type: "error", message: "New passwords do not match" })
+      return
+    }
+    if (passwordData.new.length < 6) {
+      setStatus({ type: "error", message: "New password must be at least 6 characters" })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordData.current,
+          newPassword: passwordData.new,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setStatus({ type: "error", message: data.error ?? "Could not change password" })
+        return
+      }
+      setStatus({ type: "success", message: "Password updated successfully" })
+      setPasswordData({ current: "", new: "", confirm: "" })
+    } catch {
+      setStatus({ type: "error", message: "Something went wrong. Please try again." })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 shadow-lg">
+    <Card className="bg-white/[0.04] border-white/10">
       <CardHeader>
-        <CardTitle className="text-2xl text-zinc-100">Security Settings</CardTitle>
-        <CardDescription className="text-zinc-400">Manage your account security</CardDescription>
+        <CardTitle className="text-xl sm:text-2xl uppercase tracking-wider text-white">Security Settings</CardTitle>
+        <CardDescription className="text-xs uppercase tracking-wider text-gray-400">
+          Manage your account security
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="current-password" className="text-zinc-300">
-              Current Password
-            </Label>
-            <Input
-              id="current-password"
-              type="password"
-              value={passwordData.current}
-              onChange={(e) =>
-                setPasswordData({ ...passwordData, current: e.target.value })
-              }
-              className="bg-zinc-800 text-zinc-100 border-zinc-700 focus:border-zinc-500 focus:ring-zinc-500"
-            />
+            <Label htmlFor="current-password" className={labelClass}>Current Password</Label>
+            <div className="relative">
+              <Input
+                id="current-password"
+                type={inputType}
+                value={passwordData.current}
+                onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                className={`${inputClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-white"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-password" className="text-zinc-300">
-              New Password
-            </Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={passwordData.new}
-              onChange={(e) =>
-                setPasswordData({ ...passwordData, new: e.target.value })
-              }
-              className="bg-zinc-800 text-zinc-100 border-zinc-700 focus:border-zinc-500 focus:ring-zinc-500"
-            />
+            <Label htmlFor="new-password" className={labelClass}>New Password</Label>
+            <div className="relative">
+              <Input
+                id="new-password"
+                type={inputType}
+                value={passwordData.new}
+                onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                className={`${inputClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-white"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm-password" className="text-zinc-300">
-              Confirm New Password
-            </Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={passwordData.confirm}
-              onChange={(e) =>
-                setPasswordData({ ...passwordData, confirm: e.target.value })
-              }
-              className="bg-zinc-800 text-zinc-100 border-zinc-700 focus:border-zinc-500 focus:ring-zinc-500"
-            />
+            <Label htmlFor="confirm-password" className={labelClass}>Confirm New Password</Label>
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={inputType}
+                value={passwordData.confirm}
+                onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                className={`${inputClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-white"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
+          {status && (
+            <p
+              className={`rounded-sm border px-3 py-2 text-xs uppercase tracking-wider ${
+                status.type === "error"
+                  ? "border-red-500/30 bg-red-500/10 text-red-400"
+                  : "border-green-500/30 bg-green-500/10 text-green-400"
+              }`}
+            >
+              {status.message}
+            </p>
+          )}
           <Button
             type="submit"
-            className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+            disabled={loading}
+            className="rounded-sm bg-white text-black hover:bg-gray-200 uppercase tracking-wider text-xs disabled:opacity-60"
             size="sm"
           >
-            Change Password
+            {loading ? "Updating..." : "Change Password"}
           </Button>
         </form>
-        <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center justify-between border-t border-white/10 pt-6">
           <div>
-            <p className="font-medium text-zinc-100">Two-Factor Authentication</p>
-            <p className="text-sm text-zinc-400">
-              Add an extra layer of security to your account
-            </p>
+            <p className="font-medium uppercase tracking-wider text-white">Two-Factor Authentication</p>
+            <p className="text-sm text-gray-400">Add an extra layer of security to your account</p>
           </div>
-          <Switch
-            checked={twoFactorEnabled}
-            onCheckedChange={setTwoFactorEnabled}
-          />
+          <Switch checked={twoFactorEnabled} onCheckedChange={setTwoFactorEnabled} />
         </div>
-        <div className="pt-4">
-          <p className="font-medium text-zinc-100">Login History</p>
-          <p className="text-sm text-zinc-400">Recent account activity</p>
-          <ul className="mt-2 space-y-2">
-            <li className="text-sm text-zinc-300">
-              Today, 10:00 AM - Login from Chrome on Windows
-            </li>
-            <li className="text-sm text-zinc-300">
-              Yesterday, 2:30 PM - Login from Safari on macOS
-            </li>
-            <li className="text-sm text-zinc-300">
-              June 1, 2023, 9:15 AM - Login from Firefox on Linux
-            </li>
+        <div className="border-t border-white/10 pt-6">
+          <p className="font-medium uppercase tracking-wider text-white">Login History</p>
+          <p className="text-sm text-gray-400">Recent account activity</p>
+          <ul className="mt-3 space-y-2">
+            <li className="text-sm text-gray-300">Today, 10:00 AM — Login from Chrome on Windows</li>
+            <li className="text-sm text-gray-300">Yesterday, 2:30 PM — Login from Safari on macOS</li>
+            <li className="text-sm text-gray-300">June 1, 2024, 9:15 AM — Login from Firefox on Linux</li>
           </ul>
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

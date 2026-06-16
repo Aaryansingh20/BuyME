@@ -1,41 +1,21 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import Image, { StaticImageData } from "next/image"
+import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Star, ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { motion, AnimatePresence } from "framer-motion"
 import hero1 from "@/public/images/hero1.jpg"
 import hero2 from "@/public/images/hero2.jpg"
 import hero3 from "@/public/images/hero3.jpg"
-import hotdeals1 from "@/public/images/hero-section/1.jpg"
-import hotdeals2 from "@/public/images/hero-section/2.jpg"
-import hotdeals3 from "@/public/images/hero-section/3.jpg"
-import hotdeals4 from "@/public/images/hero-section/4.jpg"
-import hotdeals5 from "@/public/images/hero-section/5.jpg"
-import hotdeals6 from "@/public/images/hero-section/6.jpg"
-import hotdeals7 from "@/public/images/hero-section/7.jpg"
+import { featuredProducts } from "@/public/data/shop"
 
-
-interface ReviewGame {
-  title: string
-  rating: number
-  originalPrice: string
-  salePrice: string
-  image: StaticImageData
-}
-
-const reviewGames: ReviewGame[] = [
-  { title: "Red Dead Redemption 2", rating: 5, originalPrice: "$59.99", salePrice: "$16.99", image: hotdeals1 },
-  { title: "Tiny Tina's Wonderlands", rating: 4, originalPrice: "$59.99", salePrice: "$27.00", image: hotdeals2 },
-  { title: "Voltaire: The Vegan", rating: 5, originalPrice: "$44.99", salePrice: "$11.10", image:hotdeals3 },
-  { title: "Little Nightmares II", rating: 5, originalPrice: "$29.99", salePrice: "$11.55", image: hotdeals4 },
-  { title: "Hogwarts Legacy", rating: 5, originalPrice: "$59.99", salePrice: "$47.65", image:hotdeals5 },
-  { title: "Red Dead Redemption 2", rating: 5, originalPrice: "$59.99", salePrice: "$16.99", image:  hotdeals6},
-  { title: "Tiny Tina's Wonderlands", rating: 4, originalPrice: "$59.99", salePrice: "$27.00", image:hotdeals7 },
-  { title: "Voltaire: The Vegan", rating: 5, originalPrice: "$44.99", salePrice: "$11.10", image: hotdeals4  },
-  { title: "Little Nightmares II", rating: 5, originalPrice: "$29.99", salePrice: "$11.55", image: hotdeals2  },
-]
+// Hot deals are drawn from the featured catalogue so each one links to its product page.
+const hotDeals = featuredProducts.slice(0, 9).map((p) => ({
+  ...p,
+  originalPrice: p.price * 1.4,
+}))
 
 const heroContent = [
   {
@@ -191,33 +171,37 @@ export default function MonochromeHeroSectionWithReviews() {
           Hot Deals
         </h2>
         <div className="space-y-3 flex-grow overflow-auto scrollbar-hide ">
-          {reviewGames.map((game, index) => (
-            <motion.div 
-              key={index} 
-              className="flex gap-3 bg-zinc-50/5 p-2 rounded-lg hover:bg-white/10 transition-colors"
+          {hotDeals.map((deal, index) => (
+            <motion.div
+              key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <Image
-                src={game.image}
-                alt={game.title}
-                width={48}
-                height={48}
-                className="rounded-md object-contain "
-              />
-              <div className="flex-grow flex flex-col justify-center">
-                <h3 className="text-sm font-medium text-white uppercase tracking-wider">{game.title}</h3>
-                <div className="flex items-center gap-1 my-0.5">
-                  {Array.from({ length: game.rating }).map((_, i) => (
-                    <Star key={i} className="h-3 w-3 fill-white text-white" />
-                  ))}
+              <Link
+                href={`/product/${deal.slug}`}
+                className="flex gap-3 bg-zinc-50/5 p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <Image
+                  src={deal.image}
+                  alt={deal.name}
+                  width={48}
+                  height={48}
+                  className="rounded-md object-cover h-12 w-12"
+                />
+                <div className="flex-grow flex flex-col justify-center min-w-0">
+                  <h3 className="text-sm font-medium text-white uppercase tracking-wider truncate">{deal.name}</h3>
+                  <div className="flex items-center gap-1 my-0.5">
+                    {Array.from({ length: deal.rating }).map((_, i) => (
+                      <Star key={i} className="h-3 w-3 fill-white text-white" />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400 line-through uppercase tracking-wider">${deal.originalPrice.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-white uppercase tracking-wider">${deal.price.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400 line-through uppercase tracking-wider">{game.originalPrice}</span>
-                  <span className="text-sm font-bold text-white uppercase tracking-wider">{game.salePrice}</span>
-                </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>

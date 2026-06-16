@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String?
+  role          String   @default("user")
+  phone         String?
+  address       String?
+  avatar        String?
+  dateOfBirth   String?
+  gender        String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cartItems         CartItem[]
+  orders            Order[]
+  wishlist          WishlistItem[]
+  addresses         Address[]
+  paymentMethods    PaymentMethod[]
+  notifications     Notification[]
+  reviews           Review[]
+  couponRedemptions CouponRedemption[]
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String // label, e.g. "Home" / "Work"
+  // Structured fields. `address` keeps a composed single-line copy for display
+  // and order snapshots; legacy rows may have only `address` populated.
+  phone     String?
+  line1     String?
+  city      String?
+  state     String?
+  pincode   String?
+  country   String?
+  address   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PaymentMethod {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String // "Credit Card" | "PayPal"
+  last4      String? // last 4 digits only — full card numbers are never stored
+  expiryDate String?
+  email      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug      String
+  name      String
+  price     Float
+  image     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, slug])
+  @@index([userId])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtotal        Float       @default(0)
+  shipping        Float       @default(0)
+  discount        Float       @default(0)
+  total           Float
+  couponCode      String?
+  shippingAddress String?
+  paymentLabel    String?
+  status          String      @default("Processing")
+  paymentStatus   String      @default("unpaid") // "unpaid" | "paid" | "refunded"
+  stripeSessionId String?
+  createdAt       DateTime    @default(now())
+  items           OrderItem[]
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  slug     String
+  name     String
+  price    Float
+  image    String
+  size     String @default("")
+  quantity Int
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug      String
+  name      String
+  price     Float
+  image     String
+  size      String   @default("")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, slug, size])
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// Mutable inventory layer over the static catalogue in public/data/shop.ts.
+// One row per product slug; product metadata (name, image, etc.) still lives
+// in shop.ts — only stock/price/availability are managed here.
+model Product {
+  slug      String   @id
+  name      String
+  category  String
+  price     Float
+  stock     Int      @default(0)
+  active    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug      String
+  rating    Int // 1–5
+  comment   String
+  verified  Boolean  @default(false) // user has an order containing this slug
+  createdAt DateTime @default(now())
+
+  @@unique([userId, slug]) // one review per user per product
+  @@index([slug])
+}
+
+model Coupon {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  type           String // "percent" | "fixed"
+  value          Float
+  minSubtotal    Float     @default(0)
+  maxRedemptions Int?
+  timesUsed      Int       @default(0)
+  active         Boolean   @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  redemptions CouponRedemption[]
+}
+
+// One row per (coupon, user) — enforces that a user can redeem a coupon only once.
+// Removed when an order using the coupon is cancelled, freeing the user to reuse it.
+model CouponRedemption {
+  id        String   @id @default(cuid())
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  @@unique([couponId, userId])
+  @@index([userId])
+}

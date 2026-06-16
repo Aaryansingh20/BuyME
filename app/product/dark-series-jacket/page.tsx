@@ -3,35 +3,30 @@
 import Image from "next/image"
 import { Star, Heart, ShoppingCart, CuboidIcon as Cube } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { useState, Suspense } from "react"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
+import { useState } from "react"
 import Navbar from "@/components/pages/navbar"
 import Link from "next/link"
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
+import dynamic from "next/dynamic"
 import darkseriesjacket from "@/public/images/one-3view.jpg"
+import { ProductReviews } from "@/components/ui/product-reviews"
 
 type Size = 's' | 'm' | 'l'
 type Category = 'T-Shirts' | 'Jeans' | 'Jackets' | 'Hoodies' | 'Sweaters' | 'Accessories' | 'Activewear' | 'Formal Wear'
-type Review = { name: string; rating: number; comment: string; date: string }
 type Product = { name: string; price: number; image: string }
 
-function Model() {
-  const { scene } = useGLTF("/3dmodel//dark-series-jacket.glb")
-  return <primitive object={scene} scale={2} position={[0, -1.5, 0]} />
-}
+const Product3DViewer = dynamic(() => import("@/components/Product3DViewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center text-white">Loading 3D model...</div>
+  ),
+})
 
 export default function Darkseriesjacket() {
   const [selectedSize, setSelectedSize] = useState<Size>('m')
   const [quantity, setQuantity] = useState(1)
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description')
   const [mainImage, setMainImage] = useState("https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80")
-  const [reviews, setReviews] = useState<Review[]>([
-    { name: 'John Doe', rating: 5, comment: 'Great product! This clothing item exceeded my expectations. Comfortable and stylish!', date: '2023-05-15' },
-    { name: 'Jane Smith', rating: 4, comment: 'Excellent quality. The material is top-notch. Definitely worth the price.', date: '2023-05-10' }
-  ])
-  const [newReview, setNewReview] = useState<Review>({ name: '', rating: 5, comment: '', date: '' })
+  const [reviewStats, setReviewStats] = useState({ average: 0, count: 0 })
   const [is3DView, setIs3DView] = useState(false);
 
   const prices: Record<Size, number> = {
@@ -63,17 +58,6 @@ export default function Darkseriesjacket() {
     'Formal Wear': []
   }
 
-  const handleAddReview = () => {
-    if (newReview.name && newReview.comment) {
-      const currentDate = new Date().toISOString().split('T')[0];
-      const updatedReview = { ...newReview, date: currentDate };
-      setReviews([updatedReview, ...reviews]);
-      setNewReview({ name: '', rating: 5, comment: '', date: '' });
-    }
-  };
-
-  const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
-
   const toggleView = () => {
     setIs3DView(!is3DView);
   };
@@ -93,15 +77,7 @@ export default function Darkseriesjacket() {
           <div className="w-full md:w-1/2">
             <div className="relative bg-zinc-800 rounded-lg overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
               {is3DView ? (
-                <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-white">Loading 3D model...</div>}>
-                  <Canvas camera={{ position: [0, 0, 6], fov: 50 }} className="w-full h-full absolute inset-0">
-                    <ambientLight intensity={0.5} />
-                    <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-                    <Model />
-                    <OrbitControls />
-                    <Environment preset="studio" />
-                  </Canvas>
-                </Suspense>
+                <Product3DViewer modelPath="/3dmodel//dark-series-jacket.glb" />
               ) : (
                 <Image
                   src={darkseriesjacket || "/placeholder.svg"}
@@ -150,7 +126,7 @@ export default function Darkseriesjacket() {
               <div className="space-y-2">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-5 h-5 ${i < Math.round(averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
+                    <Star key={i} className={`w-5 h-5 ${i < Math.round(reviewStats.average) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
                   ))}
                 </div>
                 <span className="text-2xl font-bold text-white block">${prices[selectedSize].toFixed(2)}</span>
@@ -239,7 +215,7 @@ export default function Darkseriesjacket() {
                       Shipping Details
                     </button>
                   </div>
-                  <div className="text-zinc-400 h-64 overflow-y-auto">
+                  <div className={activeTab === 'reviews' ? 'text-zinc-400' : 'text-zinc-400 h-64 overflow-y-auto'}>
                     {activeTab === 'description' && (
                       <div>
                         <p>Experience ultimate comfort and style with our Premium Clothing collection. Made from high-quality materials, this piece features:</p>
@@ -253,65 +229,7 @@ export default function Darkseriesjacket() {
                       </div>
                     )}
                     {activeTab === 'reviews' && (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`w-4 h-4 ${i < Math.round(averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
-                            ))}
-                          </div>
-                          <span>{averageRating.toFixed(1)} out of 5</span>
-                        </div>
-                        <p>Based on {reviews.length} reviews</p>
-                        <div className="space-y-4">
-                          {reviews.map((review, index) => (
-                            <div key={index} className="bg-zinc-900 p-4 rounded-lg">
-                              <div className="flex justify-between items-center mb-2">
-                                <p className="font-semibold text-white">{review.name}</p>
-                                <span className="text-zinc-400 text-sm">{review.date}</span>
-                              </div>
-                              <div className="flex gap-1 my-1">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
-                                ))}
-                              </div>
-                              <p className="text-sm">{review.comment}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="space-y-2 bg-zinc-900 p-4 rounded-lg">
-                          <h3 className="text-white font-semibold">Add Your Review</h3>
-                          <Input
-                            type="text"
-                            placeholder="Your Name"
-                            className="w-full bg-zinc-800 text-white"
-                            value={newReview.name}
-                            onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
-                          />
-                          <div className="flex items-center gap-2 mt-2">
-                            <span>Rating:</span>
-                            {[1, 2, 3, 4, 5].map((rating) => (
-                              <button
-                                key={rating}
-                                onClick={() => setNewReview({ ...newReview, rating })}
-                                className={`w-6 h-6 rounded-full ${newReview.rating >= rating ? 'bg-yellow-400' : 'bg-zinc-700'}`}
-                              />
-                            ))}
-                          </div>
-                          <Textarea
-                            placeholder="Your Review"
-                            className="w-full bg-zinc-800 text-white mt-2"
-                            value={newReview.comment}
-                            onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                          />
-                          <Button
-                            onClick={handleAddReview}
-                            className="w-full bg-zinc-700 hover:bg-zinc-600 text-white mt-2"
-                          >
-                            Submit Review
-                          </Button>
-                        </div>
-                      </div>
+                      <ProductReviews slug="dark-series-jacket" onStats={(a, c) => setReviewStats({ average: a, count: c })} />
                     )}
                     {activeTab === 'shipping' && (
                       <ul className="space-y-2">
