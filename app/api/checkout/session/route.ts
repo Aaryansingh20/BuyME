@@ -48,6 +48,11 @@ export async function POST(req: Request) {
     try {
       const checkout = await stripe.checkout.sessions.create({
         mode: "payment",
+        // Render Checkout in the shopper's own language (e.g. German for DE buyers).
+        locale: "auto",
+        // Some local methods (Klarna, etc.) require a billing address — let Stripe
+        // collect it when the chosen method needs it.
+        billing_address_collection: "auto",
         customer_email: session.email,
         line_items: [
           {

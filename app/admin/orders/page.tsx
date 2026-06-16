@@ -19,6 +19,9 @@ type Order = {
   couponCode: string | null
   shippingAddress: string | null
   paymentLabel: string | null
+  cancelReason: string | null
+  trackingNumber: string | null
+  carrier: string | null
   items: OrderItem[]
   user: { name: string; email: string }
 }
@@ -36,6 +39,8 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [track, setTrack] = useState<Record<string, { trackingNumber: string; carrier: string }>>({})
+  const [savingTrack, setSavingTrack] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/admin/orders")
@@ -63,6 +68,36 @@ export default function AdminOrdersPage() {
       }
     } finally {
       setUpdating(null)
+    }
+  }
+
+  const trackFor = (o: Order) =>
+    track[o.id] ?? { trackingNumber: o.trackingNumber ?? "", carrier: o.carrier ?? "" }
+
+  const setTrackField = (o: Order, patch: Partial<{ trackingNumber: string; carrier: string }>) =>
+    setTrack((t) => ({ ...t, [o.id]: { ...trackFor(o), ...patch } }))
+
+  const saveTracking = async (o: Order) => {
+    const buf = trackFor(o)
+    setSavingTrack(o.id)
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: o.id, trackingNumber: buf.trackingNumber, carrier: buf.carrier }),
+      })
+      if (res.ok) {
+        setOrders((list) =>
+          list.map((x) => (x.id === o.id ? { ...x, trackingNumber: buf.trackingNumber || null, carrier: buf.carrier || null } : x))
+        )
+        setTrack((t) => {
+          const next = { ...t }
+          delete next[o.id]
+          return next
+        })
+      }
+    } finally {
+      setSavingTrack(null)
     }
   }
 
@@ -110,6 +145,9 @@ export default function AdminOrdersPage() {
                   </TableCell>
                   <TableCell className="max-w-xs text-xs text-gray-400">
                     {o.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                    {o.status === "Cancelled" && o.cancelReason && (
+                      <span className="mt-1 block text-red-400/80">Reason: {o.cancelReason}</span>
+                    )}
                   </TableCell>
                   <TableCell className="font-semibold text-white">${o.total.toFixed(2)}</TableCell>
                   <TableCell className="text-xs text-gray-400">
@@ -130,6 +168,29 @@ export default function AdminOrdersPage() {
                         </option>
                       ))}
                     </select>
+                    {o.status !== "Cancelled" && (
+                      <div className="mt-2 flex flex-col gap-1">
+                        <input
+                          value={trackFor(o).carrier}
+                          onChange={(e) => setTrackField(o, { carrier: e.target.value })}
+                          placeholder="Carrier"
+                          className="w-36 rounded-sm border border-white/15 bg-black/40 px-2 py-1 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-white/30"
+                        />
+                        <input
+                          value={trackFor(o).trackingNumber}
+                          onChange={(e) => setTrackField(o, { trackingNumber: e.target.value })}
+                          placeholder="Tracking #"
+                          className="w-36 rounded-sm border border-white/15 bg-black/40 px-2 py-1 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-white/30"
+                        />
+                        <button
+                          onClick={() => saveTracking(o)}
+                          disabled={savingTrack === o.id || !track[o.id]}
+                          className="w-36 rounded-sm bg-white/10 px-2 py-1 text-[11px] uppercase tracking-wider text-white hover:bg-white/15 disabled:opacity-40"
+                        >
+                          {savingTrack === o.id ? "Saving…" : "Save tracking"}
+                        </button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

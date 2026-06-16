@@ -31,6 +31,19 @@ model User {
   notifications     Notification[]
   reviews           Review[]
   couponRedemptions CouponRedemption[]
+  loginEvents       LoginEvent[]
+}
+
+model LoginEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  method    String   @default("password") // "password" | "google"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Address {
@@ -107,6 +120,11 @@ model Order {
   status          String      @default("Processing")
   paymentStatus   String      @default("unpaid") // "unpaid" | "paid" | "refunded"
   stripeSessionId String?
+  cancelReason    String?
+  trackingNumber  String?
+  carrier         String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
   createdAt       DateTime    @default(now())
   items           OrderItem[]
 

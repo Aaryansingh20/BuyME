@@ -14,7 +14,7 @@ export default function ProductGrid() {
   const { has, toggle } = useWishlist()
 
   return (
-    <div className="min-h-screen bg-black p-8">
+    <div className="min-h-screen p-4 sm:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-white">FEATURED PRODUCTS</h1>

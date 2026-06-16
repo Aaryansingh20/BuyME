@@ -74,7 +74,7 @@ export default function ProductDetailPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-screen">
         <div className="container mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="mb-8 text-sm text-zinc-400">
@@ -141,15 +141,6 @@ export default function ProductDetailPage() {
                 </div>
 
                 <div>
-                  <div className="mb-2 text-sm text-zinc-400">Color:</div>
-                  <div className="flex gap-3">
-                    <button className="h-8 w-8 rounded-md bg-black ring-offset-2 ring-offset-zinc-900 hover:ring-2 hover:ring-white" />
-                    <button className="h-8 w-8 rounded-md bg-zinc-500 ring-offset-2 ring-offset-zinc-900 hover:ring-2 hover:ring-white" />
-                    <button className="h-8 w-8 rounded-md bg-white ring-offset-2 ring-offset-zinc-900 hover:ring-2 hover:ring-zinc-500" />
-                  </div>
-                </div>
-
-                <div>
                   <div className="mb-2 text-sm text-zinc-400">Quantity:</div>
                   <div className="flex items-center gap-3">
                     <button
@@ -209,59 +200,80 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="mt-12 flex w-full flex-col items-center border-t border-zinc-800 pt-8">
-                  <div className="w-full space-y-4">
-                    <div className="mb-4 flex justify-center border-b border-zinc-800">
-                      {(["description", "reviews", "shipping"] as const).map((tab) => (
-                        <button
-                          key={tab}
-                          className={`flex-1 px-4 py-2 text-center capitalize ${
-                            activeTab === tab ? "border-b-2 border-white text-white" : "text-zinc-400"
-                          }`}
-                          onClick={() => setActiveTab(tab)}
-                        >
-                          {tab === "description" ? "Product Details" : tab === "reviews" ? "Reviews" : "Shipping"}
-                        </button>
-                      ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Product tabs — full width below the product */}
+          <div className="mt-12 border-t border-zinc-800 pt-8">
+            <div className="mx-auto w-full max-w-4xl space-y-4">
+              <div className="mb-4 flex justify-center border-b border-zinc-800">
+                {(["description", "reviews", "shipping"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    className={`flex-1 px-4 py-2 text-center capitalize ${
+                      activeTab === tab ? "border-b-2 border-white text-white" : "text-zinc-400"
+                    }`}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab === "description" ? "Product Details" : tab === "reviews" ? "Reviews" : "Shipping"}
+                  </button>
+                ))}
+              </div>
+              <div className="h-[34rem] overflow-y-auto pr-2 text-zinc-400">
+                {activeTab === "description" && (
+                  <div className="space-y-4">
+                    <p>
+                      Elevate your wardrobe with the {product.name}. Crafted from premium materials for everyday
+                      comfort and a sharp, modern silhouette, it&apos;s designed to look and feel great wear after wear.
+                    </p>
+                    <div>
+                      <h4 className="mb-2 font-semibold text-white">Highlights</h4>
+                      <ul className="list-disc space-y-1 pl-5">
+                        <li>Premium fabric blend</li>
+                        <li>Modern fit and stylish design</li>
+                        <li>Durable, reinforced construction</li>
+                        <li>Breathable and lightweight for all-day wear</li>
+                        <li>Available in multiple colors</li>
+                      </ul>
                     </div>
-                    <div
-                      className={
-                        activeTab === "reviews"
-                          ? "text-zinc-400"
-                          : "h-64 overflow-y-auto text-zinc-400"
-                      }
-                    >
-                      {activeTab === "description" && (
-                        <div>
-                          <p>
-                            Elevate your wardrobe with the {product.name}. Crafted from premium materials for
-                            everyday comfort and a sharp, modern silhouette.
-                          </p>
-                          <ul className="mt-2 list-disc space-y-1 pl-5">
-                            <li>Premium fabric blend</li>
-                            <li>Modern fit and stylish design</li>
-                            <li>Durable construction</li>
-                            <li>Easy care instructions</li>
-                            <li>Available in multiple colors</li>
-                          </ul>
-                        </div>
-                      )}
-                      {activeTab === "reviews" && (
-                        <ProductReviews slug={product.slug} onStats={(avg) => setAverageRating(avg)} />
-                      )}
-                      {activeTab === "shipping" && (
-                        <ul className="space-y-2">
-                          <li>Free standard shipping on orders over $100</li>
-                          <li>Express delivery available (2-3 business days)</li>
-                          <li>International shipping available</li>
-                          <li>30-day return policy</li>
-                          <li>Free returns within the US</li>
-                        </ul>
-                      )}
+                    <div>
+                      <h4 className="mb-2 font-semibold text-white">Materials &amp; Care</h4>
+                      <ul className="list-disc space-y-1 pl-5">
+                        <li>80% cotton, 20% polyester</li>
+                        <li>Machine wash cold, inside out</li>
+                        <li>Do not bleach; tumble dry low</li>
+                        <li>Warm iron if needed</li>
+                      </ul>
                     </div>
                   </div>
-                </div>
+                )}
+                {activeTab === "reviews" && (
+                  <ProductReviews slug={product.slug} onStats={(avg) => setAverageRating(avg)} />
+                )}
+                {activeTab === "shipping" && (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="mb-2 font-semibold text-white">Delivery</h4>
+                      <ul className="list-disc space-y-1 pl-5">
+                        <li>Free standard shipping on orders over $100</li>
+                        <li>Standard delivery: 4–6 business days</li>
+                        <li>Express delivery available (2–3 business days)</li>
+                        <li>International shipping available to most countries</li>
+                        <li>Orders are processed within 24 hours on business days</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="mb-2 font-semibold text-white">Returns</h4>
+                      <ul className="list-disc space-y-1 pl-5">
+                        <li>30-day hassle-free return policy</li>
+                        <li>Free returns within the US</li>
+                        <li>Items must be unworn with original tags attached</li>
+                        <li>Refunds are issued to your original payment method</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -25,6 +25,10 @@ export function ProductReviews({ slug, onStats }: Props) {
   const [comment, setComment] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  // Only render a handful at a time so a product with hundreds of reviews
+  // doesn't stretch the page — "Show more" reveals the rest in batches.
+  const PAGE_SIZE = 5
+  const [visible, setVisible] = useState(PAGE_SIZE)
 
   // Keep onStats in a ref so the host can pass an inline callback without
   // re-triggering the load effect each render.
@@ -169,7 +173,7 @@ export function ProductReviews({ slug, onStats }: Props) {
             <p className="mt-3 text-sm">No reviews yet.</p>
           </div>
         ) : (
-          reviews.map((review) => (
+          reviews.slice(0, visible).map((review) => (
             <div key={review.id} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold uppercase text-white">
@@ -198,6 +202,16 @@ export function ProductReviews({ slug, onStats }: Props) {
               </div>
             </div>
           ))
+        )}
+
+        {!loading && visible < reviews.length && (
+          <Button
+            variant="outline"
+            onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            className="w-full rounded-sm border-zinc-800 bg-transparent text-xs uppercase tracking-wider text-white hover:bg-white/5"
+          >
+            Show more reviews ({reviews.length - visible})
+          </Button>
         )}
       </div>
     </div>

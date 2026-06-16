@@ -4,20 +4,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Eye, EyeOff } from "lucide-react"
-import { useState, FormEvent } from "react"
+import { useState, useEffect, FormEvent } from "react"
 
 const inputClass =
   "rounded-sm bg-zinc-900/80 text-white border-zinc-800 placeholder:text-gray-500 focus-visible:ring-white text-sm"
 const labelClass = "text-xs uppercase tracking-wider text-gray-300"
 
+interface LoginEvent {
+  id: string
+  device: string
+  ip: string | null
+  method: string
+  createdAt: string
+}
+
 export function SecuritySettings() {
   const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" })
   const [showPassword, setShowPassword] = useState(false)
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [status, setStatus] = useState<{ type: "error" | "success"; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [history, setHistory] = useState<LoginEvent[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/auth/login-history")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.history && setHistory(data.history))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false))
+  }, [])
 
   const inputType = showPassword ? "text" : "password"
 
@@ -29,8 +45,8 @@ export function SecuritySettings() {
       setStatus({ type: "error", message: "New passwords do not match" })
       return
     }
-    if (passwordData.new.length < 6) {
-      setStatus({ type: "error", message: "New password must be at least 6 characters" })
+    if (passwordData.new.length < 8) {
+      setStatus({ type: "error", message: "New password must be at least 8 characters" })
       return
     }
 
@@ -153,16 +169,34 @@ export function SecuritySettings() {
             <p className="font-medium uppercase tracking-wider text-white">Two-Factor Authentication</p>
             <p className="text-sm text-gray-400">Add an extra layer of security to your account</p>
           </div>
-          <Switch checked={twoFactorEnabled} onCheckedChange={setTwoFactorEnabled} />
+          <span className="rounded-sm border border-white/15 px-2 py-1 text-[10px] uppercase tracking-wider text-gray-400">
+            Coming soon
+          </span>
         </div>
         <div className="border-t border-white/10 pt-6">
           <p className="font-medium uppercase tracking-wider text-white">Login History</p>
           <p className="text-sm text-gray-400">Recent account activity</p>
-          <ul className="mt-3 space-y-2">
-            <li className="text-sm text-gray-300">Today, 10:00 AM — Login from Chrome on Windows</li>
-            <li className="text-sm text-gray-300">Yesterday, 2:30 PM — Login from Safari on macOS</li>
-            <li className="text-sm text-gray-300">June 1, 2024, 9:15 AM — Login from Firefox on Linux</li>
-          </ul>
+          {historyLoading ? (
+            <p className="mt-3 text-sm text-gray-500">Loading…</p>
+          ) : history.length === 0 ? (
+            <p className="mt-3 text-sm text-gray-500">No recent sign-ins recorded yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {history.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-baseline gap-x-2 text-sm text-gray-300">
+                  <span className="text-gray-400">
+                    {new Date(e.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </span>
+                  <span className="text-gray-600">—</span>
+                  <span>
+                    {e.device}
+                    {e.method === "google" && " · via Google"}
+                  </span>
+                  {e.ip && <span className="text-xs text-gray-500">({e.ip})</span>}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </CardContent>
     </Card>

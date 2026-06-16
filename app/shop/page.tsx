@@ -23,7 +23,7 @@ export default async function ShopPage({ searchParams }: { searchParams: { categ
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-black text-white">
+      <main className="min-h-screen text-white">
         <div className="container mx-auto px-4 py-10">
           <div className="mb-2 text-sm text-zinc-400">
             <Link href="/" className="hover:text-white">Home</Link> /{" "}

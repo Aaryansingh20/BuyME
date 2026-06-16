@@ -7,9 +7,9 @@ import footermodel from "@/public/images/footer (2).jpg"
 
 export default function FooterServices() {
   return (
-    <div className="bg-black text-white">
+    <div className="text-white">
       {/* Services and Image Grid */}
-      <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-12 ">
+      <div className="container mx-auto max-w-6xl grid gap-8 px-4 py-12 md:grid-cols-2 md:gap-12">
         {/* Services List */}
         <div className="space-y-12 flex flex-col justify-center">
           <h2 className="text-4xl tracking-wider uppercase mb-6">Our Services</h2>
@@ -46,19 +46,20 @@ export default function FooterServices() {
         </div>
 
         {/* Product Image */}
-        <div className="relative h-[900px]">
+        <div className="relative h-72 w-full overflow-hidden rounded-lg sm:h-96 md:h-[640px] lg:h-[820px]">
           <Image
             src={footermodel}
             alt="Featured Product"
             fill
-            className="object-fill opacity-85"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover opacity-85"
           />
         </div>
       </div>
 
       {/* Newsletter Section */}
       <div className="border-t border-zinc-800">
-        <div className="container mx-auto max-w-6xl p-12">
+        <div className="container mx-auto max-w-6xl px-4 py-12">
           <div className="max-w-xl mx-auto space-y-6">
             <h2 className="text-2xl font-mono uppercase text-center">Newsletter</h2>
             <div className="flex gap-2">
@@ -77,7 +78,7 @@ export default function FooterServices() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800">
-        <div className="container mx-auto max-w-7xl p-12">
+        <div className="container mx-auto max-w-7xl px-4 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
               <h3 className="font-mono uppercase mb-4">BuyME</h3>

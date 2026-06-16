@@ -4,11 +4,17 @@ import Image from "next/image"
 import { Star, Heart, ShoppingCart, CuboidIcon as Cube } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Navbar from "@/components/pages/navbar"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import ClassicNoir from "@/public/images/three-3view.jpg"
 import { ProductReviews } from "@/components/ui/product-reviews"
+import { useCart } from "@/hooks/cartcontext"
+import { useWishlist } from "@/hooks/wishlistcontext"
+
+const PRODUCT_SLUG = "classic-noir-wear"
+const PRODUCT_NAME = "Dark series jacket"
 
 type Size = 's' | 'm' | 'l'
 type Category = 'T-Shirts' | 'Jeans' | 'Jackets' | 'Hoodies' | 'Sweaters' | 'Accessories' | 'Activewear' | 'Formal Wear'
@@ -58,14 +64,36 @@ export default function ClassicNoirWear() {
     'Formal Wear': []
   }
 
+  const router = useRouter()
+  const { addToCart } = useCart()
+  const { has: inWishlist, toggle: toggleWishlist } = useWishlist()
+
   const toggleView = () => {
     setIs3DView(!is3DView);
   };
 
+  const handleAddToCart = () =>
+    addToCart({
+      slug: PRODUCT_SLUG,
+      name: PRODUCT_NAME,
+      price: prices[selectedSize],
+      image: ClassicNoir,
+      size: selectedSize.toUpperCase(),
+      quantity,
+    })
+
+  const handleBuyNow = async () => {
+    await handleAddToCart()
+    router.push("/product/cartpage")
+  }
+
+  const handleToggleWishlist = () =>
+    toggleWishlist({ slug: PRODUCT_SLUG, name: PRODUCT_NAME, price: prices[selectedSize], image: ClassicNoir })
+
   return (
     <>
     <Navbar/>
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="text-zinc-400 text-sm mb-8">
@@ -153,15 +181,6 @@ export default function ClassicNoirWear() {
               </div>
 
               <div>
-                <div className="text-sm text-zinc-400 mb-2">Color:</div>
-                <div className="flex gap-3">
-                  <button className="w-8 h-8 rounded-md bg-black hover:ring-2 hover:ring-white ring-offset-2 ring-offset-zinc-900" />
-                  <button className="w-8 h-8 rounded-md bg-zinc-500 hover:ring-2 hover:ring-white ring-offset-2 ring-offset-zinc-900" />
-                  <button className="w-8 h-8 rounded-md bg-white hover:ring-2 hover:ring-zinc-500 ring-offset-2 ring-offset-zinc-900" />
-                </div>
-              </div>
-
-              <div>
                 <div className="text-sm text-zinc-400 mb-2">Quantity:</div>
                 <div className="flex items-center gap-3">
                   <button 
@@ -182,68 +201,109 @@ export default function ClassicNoirWear() {
 
               <div className="pt-4 flex flex-col gap-3">
                 <div className="grid grid-cols-3 gap-3">
-                  <Button className="w-full bg-zinc-700 hover:bg-zinc-600 text-white">
+                  <Button
+                    onClick={handleAddToCart}
+                    aria-label="Add to cart"
+                    className="w-full bg-zinc-700 hover:bg-zinc-600 text-white"
+                  >
                     <ShoppingCart className="h-5 w-5" />
                   </Button>
-                  <Button className="w-full bg-zinc-700 hover:bg-zinc-600 text-white">Buy now</Button>
-                  <Button variant="outline" className="w-full">
-                    <Heart className="h-4 w-4" />
+                  <Button onClick={handleBuyNow} className="w-full bg-zinc-700 hover:bg-zinc-600 text-white">
+                    Buy now
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleToggleWishlist}
+                    aria-label={inWishlist(PRODUCT_SLUG) ? "Remove from wishlist" : "Add to wishlist"}
+                    className="w-full"
+                  >
+                    <Heart className={`h-4 w-4 ${inWishlist(PRODUCT_SLUG) ? "fill-red-500 text-red-500" : ""}`} />
                   </Button>
                 </div>
               </div>
 
-              {/* Tab Sections */}
-              <div className="w-full flex flex-col items-center mt-12 border-t border-zinc-800 pt-8">
-                <div className="w-full space-y-4">
-                  <div className="flex justify-center border-b border-zinc-800 mb-4">
-                    <button
-                      className={`py-2 px-4 flex-1 text-center ${activeTab === 'description' ? 'text-white border-b-2 border-white' : 'text-zinc-400'}`}
-                      onClick={() => setActiveTab('description')}
-                    >
-                      Product Details
-                    </button>
-                    <button
-                      className={`py-2 px-4 flex-1 text-center ${activeTab === 'reviews' ? 'text-white border-b-2 border-white' : 'text-zinc-400'}`}
-                      onClick={() => setActiveTab('reviews')}
-                    >
-                      Reviews
-                    </button>
-                    <button
-                      className={`py-2 px-4 flex-1 text-center ${activeTab === 'shipping' ? 'text-white border-b-2 border-white' : 'text-zinc-400'}`}
-                      onClick={() => setActiveTab('shipping')}
-                    >
-                      Shipping Details
-                    </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Product tabs — full width below the product */}
+        <div className="mt-12 border-t border-zinc-800 pt-8">
+          <div className="mx-auto w-full max-w-4xl space-y-4">
+            <div className="flex justify-center border-b border-zinc-800 mb-4">
+              <button
+                className={`py-2 px-4 flex-1 text-center ${activeTab === 'description' ? 'text-white border-b-2 border-white' : 'text-zinc-400'}`}
+                onClick={() => setActiveTab('description')}
+              >
+                Product Details
+              </button>
+              <button
+                className={`py-2 px-4 flex-1 text-center ${activeTab === 'reviews' ? 'text-white border-b-2 border-white' : 'text-zinc-400'}`}
+                onClick={() => setActiveTab('reviews')}
+              >
+                Reviews
+              </button>
+              <button
+                className={`py-2 px-4 flex-1 text-center ${activeTab === 'shipping' ? 'text-white border-b-2 border-white' : 'text-zinc-400'}`}
+                onClick={() => setActiveTab('shipping')}
+              >
+                Shipping Details
+              </button>
+            </div>
+            <div className="h-[34rem] overflow-y-auto pr-2 text-zinc-400">
+              {activeTab === 'description' && (
+                <div className="space-y-4">
+                  <p>
+                    Experience ultimate comfort and style with our Premium Clothing collection. Crafted from
+                    high-quality materials and finished with meticulous attention to detail, this piece is built to be a
+                    staple in your wardrobe for years to come.
+                  </p>
+                  <div>
+                    <h4 className="mb-2 font-semibold text-white">Highlights</h4>
+                    <ul className="list-disc space-y-1 pl-5">
+                      <li>Premium cotton blend fabric</li>
+                      <li>Modern fit and stylish design</li>
+                      <li>Durable, reinforced construction</li>
+                      <li>Breathable and lightweight for all-day wear</li>
+                      <li>Available in multiple colors</li>
+                    </ul>
                   </div>
-                  <div className={activeTab === 'reviews' ? 'text-zinc-400' : 'text-zinc-400 h-64 overflow-y-auto'}>
-                    {activeTab === 'description' && (
-                      <div>
-                        <p>Experience ultimate comfort and style with our Premium Clothing collection. Made from high-quality materials, this piece features:</p>
-                        <ul className="list-disc pl-5 mt-2 space-y-1">
-                          <li>Premium cotton blend fabric</li>
-                          <li>Modern fit and stylish design</li>
-                          <li>Durable construction</li>
-                          <li>Easy care instructions</li>
-                          <li>Available in multiple colors</li>
-                        </ul>
-                      </div>
-                    )}
-                    {activeTab === 'reviews' && (
-                      <ProductReviews slug="classic-noir-wear" onStats={(a, c) => setReviewStats({ average: a, count: c })} />
-                    )}
-                    {activeTab === 'shipping' && (
-                      <ul className="space-y-2">
-                        <li>Free standard shipping on orders over $100</li>
-                        <li>Express delivery available (2-3 business days)</li>
-                        <li>International shipping available</li>
-                        <li>30-day return policy</li>
-                        <li>Free returns within the US</li>
-                        <li>Expedited shipping options available at checkout</li>
-                      </ul>
-                    )}
+                  <div>
+                    <h4 className="mb-2 font-semibold text-white">Materials &amp; Care</h4>
+                    <ul className="list-disc space-y-1 pl-5">
+                      <li>80% cotton, 20% polyester</li>
+                      <li>Machine wash cold, inside out</li>
+                      <li>Do not bleach; tumble dry low</li>
+                      <li>Warm iron if needed</li>
+                    </ul>
                   </div>
                 </div>
-              </div>
+              )}
+              {activeTab === 'reviews' && (
+                <ProductReviews slug="classic-noir-wear" onStats={(a, c) => setReviewStats({ average: a, count: c })} />
+              )}
+              {activeTab === 'shipping' && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="mb-2 font-semibold text-white">Delivery</h4>
+                    <ul className="list-disc space-y-1 pl-5">
+                      <li>Free standard shipping on orders over $100</li>
+                      <li>Standard delivery: 4–6 business days</li>
+                      <li>Express delivery available (2–3 business days)</li>
+                      <li>International shipping available to most countries</li>
+                      <li>Orders are processed within 24 hours on business days</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-semibold text-white">Returns</h4>
+                    <ul className="list-disc space-y-1 pl-5">
+                      <li>30-day hassle-free return policy</li>
+                      <li>Free returns within the US</li>
+                      <li>Items must be unworn with original tags attached</li>
+                      <li>Refunds are issued to your original payment method</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

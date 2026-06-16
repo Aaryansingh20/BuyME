@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useCart } from "@/hooks/cartcontext"
 import { useWishlist } from "@/hooks/wishlistcontext"
+import { Logo } from "@/components/ui/logo"
 
 export default function Navbar() {
   const { count: cartCount, subtotal } = useCart();
@@ -58,7 +59,7 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex h-20 items-center justify-center gap-4">
-          <div className="flex items-center justify-between w-full max-w-7xl">
+          <div className="flex min-w-0 items-center justify-between gap-2 w-full max-w-7xl">
             {/* Mobile Menu - Only visible on small screens */}
             <Sheet>
               <SheetTrigger asChild>
@@ -70,8 +71,8 @@ export default function Navbar() {
               <SheetContent side="left" className="w-[300px] bg-black p-0">
                 <div className="flex h-full flex-col">
                   <div className="border-b border-gray-700 p-4">
-                    <Link href="/" className="text-3xl font-bold uppercase tracking-wider text-white">
-                      BuyME
+                    <Link href="/">
+                      <Logo />
                     </Link>
                   </div>
                   <div className="flex-1 overflow-auto py-6">
@@ -140,13 +141,8 @@ export default function Navbar() {
               </SheetContent>
             </Sheet>
 
-            {/* Logo */}
-            <Link href="/" className="text-2xl font-bold uppercase tracking-widest text-white lg:mr-10">
-              BuyME
-            </Link>
-
             {/* Desktop Navigation - Hidden on mobile, visible on larger screens */}
-            <div className="hidden lg:flex items-center space-x-6 lg:mr-6">
+            <div className="hidden lg:flex items-center space-x-4 lg:mr-4 shrink-0">
               <Link href="/" className="text-sm font-medium uppercase tracking-wider text-white hover:text-gray-300 hover:bg-black transition-colors px-3 py-2">
                 Home
               </Link>
@@ -213,7 +209,7 @@ export default function Navbar() {
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden lg:block max-w-lg w-full">
+            <div className="hidden lg:flex min-w-0 flex-1 max-w-sm">
               <form onSubmit={handleSearch} className="relative flex w-full items-center">
                 <Input
                   type="search"
@@ -230,7 +226,7 @@ export default function Navbar() {
             </div>
 
             {/* User Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {/* Mobile Search Toggle */}
               <Button
                 variant="ghost"

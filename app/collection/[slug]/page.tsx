@@ -20,7 +20,7 @@ export default function CollectionPage({ params }: { params: { slug: string } })
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-black text-white">
+      <main className="min-h-screen text-white">
         {/* Hero banner */}
         <section className="relative h-[60vh] min-h-[420px] w-full overflow-hidden">
           <Image src={collection.hero} alt={collection.title} fill priority className="object-cover" />

@@ -163,7 +163,7 @@ export default function CheckoutPage() {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-black text-white">
+        <main className="min-h-screen text-white">
           <div className="container mx-auto flex flex-col items-center py-24 text-center text-gray-400">
             <ShoppingBag className="h-12 w-12" />
             <p className="mt-4 uppercase tracking-wider">Your cart is empty.</p>
@@ -183,7 +183,7 @@ export default function CheckoutPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-black text-white">
+      <main className="min-h-screen text-white">
         <div className="container mx-auto px-4 py-10">
           <h1 className="text-3xl font-bold uppercase tracking-wider">Checkout</h1>
 

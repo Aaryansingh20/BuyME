@@ -2,10 +2,21 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyPassword } from "@/lib/password"
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from "@/lib/auth"
+import { recordLogin } from "@/lib/login-events"
+import { rateLimit, clientIp } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 
 export async function POST(req: Request) {
+  // Per-IP brute-force guard: at most 10 login attempts per 15 minutes.
+  const limit = rateLimit(`login:${clientIp(req)}`, 10, 15 * 60 * 1000)
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+    )
+  }
+
   let email = ""
   let password = ""
   try {
@@ -27,6 +38,9 @@ export async function POST(req: Request) {
     name: user.name,
     role: user.role as Role,
   })
+
+  // Record the sign-in for the user's login history (non-blocking).
+  await recordLogin(user.id, req, "password")
 
   const res = NextResponse.json({ ok: true, role: user.role })
   res.cookies.set(SESSION_COOKIE, token, {

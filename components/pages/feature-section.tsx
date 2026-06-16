@@ -16,7 +16,7 @@ const cta =
 
 export default function FeaturesSection() {
   return (
-    <div className="bg-black text-white min-h-screen">
+    <div className="text-white min-h-screen">
       {/* Service Features */}
       <div className="container mx-auto p-4 sm:p-6">
         {/* Main Grid */}

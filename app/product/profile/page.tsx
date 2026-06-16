@@ -7,7 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-type OrderView = { id: string; fullId: string; date: string; items: string[]; total: number; status: string }
+type OrderView = {
+  id: string
+  fullId: string
+  date: string
+  items: string[]
+  total: number
+  status: string
+  placedAt: string
+  shippedAt: string | null
+  deliveredAt: string | null
+  trackingNumber: string | null
+  carrier: string | null
+}
 import { ProfileInfo } from "@/components/ui/profile-info"
 import { OrderHistory } from "@/components/ui/order"
 import { Wishlist } from "@/components/ui/wishlist"
@@ -17,8 +29,6 @@ import { Notifications } from "@/components/ui/notification"
 import { SecuritySettings } from "@/components/ui/security"
 import Navbar from "@/components/pages/navbar"
 import FooterServices from "@/components/pages/footer"
-import Image from "next/image"
-import profileBg from "@/public/auth-bg.jpg"
 
 const emptyUser = { name: "", email: "", phone: "", address: "", avatar: "", dateOfBirth: "", gender: "" }
 
@@ -59,6 +69,10 @@ export default function ProfilePage() {
       createdAt: string
       total: number
       status: string
+      shippedAt: string | null
+      deliveredAt: string | null
+      trackingNumber: string | null
+      carrier: string | null
       items: { name: string }[]
     }
     return fetch("/api/orders")
@@ -73,6 +87,11 @@ export default function ProfilePage() {
               items: o.items.map((i) => i.name),
               total: o.total,
               status: o.status,
+              placedAt: o.createdAt,
+              shippedAt: o.shippedAt,
+              deliveredAt: o.deliveredAt,
+              trackingNumber: o.trackingNumber,
+              carrier: o.carrier,
             }))
           )
         }
@@ -84,11 +103,11 @@ export default function ProfilePage() {
     loadOrders()
   }, [loadOrders])
 
-  const cancelOrder = async (fullId: string) => {
+  const cancelOrder = async (fullId: string, reason: string) => {
     const res = await fetch("/api/orders", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: fullId }),
+      body: JSON.stringify({ id: fullId, reason }),
     })
     if (res.ok) {
       await loadOrders()
@@ -125,13 +144,6 @@ export default function ProfilePage() {
 
   return (
     <div className="relative min-h-screen text-zinc-100">
-      {/* Fixed full-bleed wallpaper behind the content (cards stay translucent on top). */}
-      <div className="fixed inset-0">
-        <Image src={profileBg} alt="" fill priority className="object-cover object-center" />
-        {/* Lighter, tinted overlay so the wallpaper shows through with some depth. */}
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/50 via-black/35 to-zinc-900/55" />
-      </div>
-
       <div className="relative z-10">
       <Navbar />
       <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">

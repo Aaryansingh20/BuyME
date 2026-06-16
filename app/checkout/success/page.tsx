@@ -148,7 +148,7 @@ export default function CheckoutSuccessPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-black text-white">
+      <main className="min-h-screen text-white">
         <Suspense fallback={<div className="py-24 text-center text-gray-500">Loading…</div>}>
           <SuccessInner />
         </Suspense>

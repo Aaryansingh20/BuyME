@@ -6,7 +6,7 @@ import urbanClothes3 from "@/public/images/three-3view.jpg"
 
 export default function BestsellerSection() {
   return (
-    <div className="bg-black text-white p-6 md:p-8">
+    <div className="text-white p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-4xl text-center uppercase tracking-wider mb-6">Our Bestseller</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

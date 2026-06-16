@@ -24,6 +24,10 @@ function ResetPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!passwordsMatch) return
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
     setError("")
     setLoading(true)
     try {

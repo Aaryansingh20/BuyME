@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { sendWelcomeEmail } from "@/lib/email"
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from "@/lib/auth"
+import { recordLogin } from "@/lib/login-events"
 import {
   GOOGLE_TOKEN_URL,
   GOOGLE_USERINFO_URL,
@@ -73,6 +74,9 @@ export async function GET(req: Request) {
     name: user.name,
     role: user.role as Role,
   })
+
+  // Record the sign-in for the user's login history (non-blocking).
+  await recordLogin(user.id, req, "google")
 
   const dest = user.role === "admin" ? "/admin" : "/"
   const res = NextResponse.redirect(`${origin}${dest}`)

@@ -71,6 +71,13 @@ export async function PATCH(req: Request) {
   const id = typeof body.id === "string" ? body.id : ""
   if (!id) return NextResponse.json({ error: "Missing order id" }, { status: 400 })
 
+  // Why the customer is cancelling — stored on the order and shown to admins.
+  const rawReason = typeof body.reason === "string" ? body.reason.trim() : ""
+  if (!rawReason) {
+    return NextResponse.json({ error: "Please tell us why you're cancelling" }, { status: 400 })
+  }
+  const reason = rawReason.slice(0, 300)
+
   const order = await prisma.order.findFirst({
     where: { id, userId: session.id },
     include: { items: true },
@@ -88,7 +95,7 @@ export async function PATCH(req: Request) {
 
   const updated = await prisma.$transaction(async (tx) => {
     await reverseOrderEffects(tx, order)
-    const o = await tx.order.update({ where: { id }, data: { status: "Cancelled" } })
+    const o = await tx.order.update({ where: { id }, data: { status: "Cancelled", cancelReason: reason } })
     await tx.notification.create({
       data: {
         userId: session.id,

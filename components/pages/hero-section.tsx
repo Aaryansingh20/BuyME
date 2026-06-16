@@ -58,7 +58,7 @@ export default function MonochromeHeroSectionWithReviews() {
   }, [])
 
   return (
-    <div className="flex h-[calc(100vh-64px)] w-full flex-col overflow-hidden bg-black p-4 lg:flex-row lg:space-x-4">
+    <div className="flex w-full flex-col p-4 lg:h-[calc(100vh-80px)] lg:flex-row lg:space-x-4 lg:overflow-hidden">
       {/* Hero Section */}
       <motion.div 
         className="relative flex-grow rounded-xl overflow-hidden shadow-2xl"

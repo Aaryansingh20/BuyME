@@ -18,7 +18,13 @@
 html,
 body {
   height: 100%;
-  background-color: black;
+  background-color: #000;
+  /* Subtle colour depth so plain pages don't read as flat black. */
+  background-image:
+    radial-gradient(60% 50% at 12% 0%, rgba(99, 102, 241, 0.1), transparent 60%),
+    radial-gradient(55% 50% at 100% 100%, rgba(236, 72, 153, 0.08), transparent 60%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 @layer utilities {

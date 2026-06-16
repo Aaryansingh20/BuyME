@@ -12,7 +12,7 @@ export default function SearchPage({ searchParams }: { searchParams: { q?: strin
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen text-white">
         <div className="container mx-auto px-4 py-10">
           <h1 className="text-2xl font-bold uppercase tracking-wider">Search Results</h1>
           {query ? (
