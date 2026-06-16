@@ -37,6 +37,13 @@ export default function ProductDetailPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setStock(d?.product ? (d.product.active ? d.product.stock : 0) : null))
       .catch(() => {})
+
+    // Load the rating up front so the header stars show even before the
+    // Reviews tab is opened.
+    fetch(`/api/reviews?slug=${encodeURIComponent(slug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setAverageRating(d.average ?? 0))
+      .catch(() => {})
   }, [slug])
 
   if (!product) {

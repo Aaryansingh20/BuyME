@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { Star, Heart, ShoppingCart, CuboidIcon as Cube } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/pages/navbar"
 import Link from "next/link"
@@ -38,6 +38,14 @@ export default function UrbanStyleCoat() {
   const [mainImage, setMainImage] = useState("https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80")
   const [reviewStats, setReviewStats] = useState({ average: 0, count: 0 })
   const [is3DView, setIs3DView] = useState(false);
+
+  // Load the rating up front so the header stars show before the Reviews tab is opened.
+  useEffect(() => {
+    fetch(`/api/reviews?slug=${PRODUCT_SLUG}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setReviewStats({ average: d.average ?? 0, count: d.count ?? 0 }))
+      .catch(() => {})
+  }, [])
 
   const prices: Record<Size, number> = {
     s: 650.00,

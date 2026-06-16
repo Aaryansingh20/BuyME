@@ -32,6 +32,11 @@ export default function CheckoutPage() {
   const [addrError, setAddrError] = useState("")
   const [savingAddr, setSavingAddr] = useState(false)
 
+  const [addingCard, setAddingCard] = useState(false)
+  const [cardForm, setCardForm] = useState({ type: "Credit Card" as "Credit Card" | "PayPal", number: "", expiryDate: "", email: "" })
+  const [cardError, setCardError] = useState("")
+  const [savingCard, setSavingCard] = useState(false)
+
   const [couponInput, setCouponInput] = useState("")
   const [applied, setApplied] = useState<Applied | null>(null)
   const [couponError, setCouponError] = useState("")
@@ -122,8 +127,58 @@ export default function CheckoutPage() {
     }
   }
 
+  const saveCard = async () => {
+    setCardError("")
+    if (cardForm.type === "Credit Card" && cardForm.number.replace(/\D/g, "").length < 4) {
+      setCardError("Enter a valid card number")
+      return
+    }
+    if (cardForm.type === "PayPal" && !cardForm.email.trim()) {
+      setCardError("Enter your PayPal email")
+      return
+    }
+    setSavingCard(true)
+    try {
+      const prevIds = new Set(methods.map((m) => m.id))
+      const res = await fetch("/api/payment-methods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: cardForm.type,
+          last4: cardForm.number,
+          expiryDate: cardForm.expiryDate,
+          email: cardForm.email,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setCardError(data.error ?? "Could not save card")
+        return
+      }
+      const list: PaymentMethod[] = data.methods ?? []
+      setMethods(list)
+      // Select the method we just added.
+      const added = list.find((m) => !prevIds.has(m.id))
+      if (added) setPaymentMethodId(added.id)
+      setCardForm({ type: "Credit Card", number: "", expiryDate: "", email: "" })
+      setAddingCard(false)
+    } finally {
+      setSavingCard(false)
+    }
+  }
+
   const placeOrder = async () => {
     setError("")
+    // Safety net in case the button is reached without a complete address.
+    const addr = addresses.find((a) => a.id === addressId)
+    if (!addr) {
+      setError("Please add and select a shipping address before paying.")
+      return
+    }
+    if (!addr.phone?.trim()) {
+      setError("Please add a phone number to your shipping address before paying.")
+      return
+    }
     setPlacing(true)
     try {
       const res = await fetch("/api/checkout/session", {
@@ -158,6 +213,17 @@ export default function CheckoutPage() {
       setPlacing(false)
     }
   }
+
+  // A delivery needs a complete shipping address with a contact number before
+  // the customer can pay. Surface exactly what's missing.
+  const selectedAddress = addresses.find((a) => a.id === addressId)
+  const missingForCheckout: string[] =
+    !selectedAddress
+      ? ["a shipping address"]
+      : !selectedAddress.phone?.trim()
+        ? ["a phone number on your address"]
+        : []
+  const canPay = loaded && missingForCheckout.length === 0
 
   if (items.length === 0) {
     return (
@@ -271,16 +337,11 @@ export default function CheckoutPage() {
                 </h2>
                 {!loaded ? (
                   <p className="mt-4 text-sm text-gray-500">Loading…</p>
-                ) : methods.length === 0 ? (
-                  <p className="mt-4 text-sm text-gray-400">
-                    No saved payment methods.{" "}
-                    <Link href="/product/profile" className="text-white underline">
-                      Add one in your profile
-                    </Link>{" "}
-                    or continue without.
-                  </p>
                 ) : (
                   <div className="mt-4 space-y-3">
+                    {methods.length === 0 && !addingCard && (
+                      <p className="text-sm text-gray-400">No saved payment methods yet — add one below.</p>
+                    )}
                     {methods.map((m) => (
                       <label
                         key={m.id}
@@ -300,6 +361,76 @@ export default function CheckoutPage() {
                         </span>
                       </label>
                     ))}
+
+                    {addingCard ? (
+                      <div className="space-y-3 rounded-sm border border-white/15 bg-black/20 p-4">
+                        <select
+                          value={cardForm.type}
+                          onChange={(e) => setCardForm({ ...cardForm, type: e.target.value as "Credit Card" | "PayPal" })}
+                          className="w-full rounded-sm border border-white/15 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                        >
+                          <option className="bg-black" value="Credit Card">Credit Card</option>
+                          <option className="bg-black" value="PayPal">PayPal</option>
+                        </select>
+                        {cardForm.type === "Credit Card" ? (
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <Input
+                              value={cardForm.number}
+                              onChange={(e) => setCardForm({ ...cardForm, number: e.target.value })}
+                              placeholder="Card number"
+                              inputMode="numeric"
+                              className="border-white/15 bg-black/40 text-white placeholder:text-gray-500 text-sm"
+                            />
+                            <Input
+                              value={cardForm.expiryDate}
+                              onChange={(e) => setCardForm({ ...cardForm, expiryDate: e.target.value })}
+                              placeholder="MM/YY"
+                              className="sm:w-32 border-white/15 bg-black/40 text-white placeholder:text-gray-500 text-sm"
+                            />
+                          </div>
+                        ) : (
+                          <Input
+                            value={cardForm.email}
+                            onChange={(e) => setCardForm({ ...cardForm, email: e.target.value })}
+                            placeholder="PayPal email"
+                            type="email"
+                            className="border-white/15 bg-black/40 text-white placeholder:text-gray-500 text-sm"
+                          />
+                        )}
+                        {cardError && <p className="text-xs text-red-400">{cardError}</p>}
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={saveCard}
+                            disabled={savingCard}
+                            className="rounded-sm bg-white text-xs font-semibold uppercase tracking-wider text-black hover:bg-gray-200 disabled:opacity-60"
+                          >
+                            {savingCard ? "Saving…" : "Save"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setAddingCard(false)
+                              setCardError("")
+                            }}
+                            className="rounded-sm border-white/15 bg-transparent text-xs uppercase tracking-wider text-white hover:bg-white/5 hover:text-white"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                        {stripeEnabled && (
+                          <p className="text-[11px] text-gray-500">
+                            This just saves a label. Your real card is entered securely on the Stripe page after you click Pay.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setAddingCard(true)}
+                        className="inline-flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
+                      >
+                        <Plus className="h-4 w-4" /> Add a payment method
+                      </button>
+                    )}
                   </div>
                 )}
               </section>
@@ -401,9 +532,15 @@ export default function CheckoutPage() {
                   </p>
                 )}
 
+                {!canPay && loaded && (
+                  <p className="mt-4 rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs uppercase tracking-wider text-amber-400">
+                    Please add {missingForCheckout[0]} above before you can {stripeEnabled ? "pay" : "place your order"}.
+                  </p>
+                )}
+
                 <Button
                   onClick={placeOrder}
-                  disabled={placing}
+                  disabled={placing || !canPay}
                   className="mt-6 h-11 w-full rounded-sm bg-white text-sm font-semibold uppercase tracking-wider text-black hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {placing
