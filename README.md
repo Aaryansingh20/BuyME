@@ -28,6 +28,9 @@ A full-stack fashion storefront built with **Next.js 14 (App Router)**, **Prisma
 - **Order tracking** — Processing → Shipped → Delivered timeline with carrier/tracking number, plus customer cancellation with a reason.
 - **Transactional email** — branded HTML emails (welcome + coupon, order confirmation, password reset) over Gmail SMTP or Resend, with a dev console fallback.
 
+### AI shopping assistant
+- **Floating chat assistant** powered by **Google Gemini**, grounded on real store data — live products & stock, active offers/coupons, sizing, shipping, and the signed-in shopper's cart, orders & loyalty points. It links straight to products/cart/profile, stays strictly on-topic, and is protected by rate limits + input caps. See [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md).
+
 ### Admin
 - Dashboard with revenue/stats, product inventory & pricing, order management (status + tracking), coupons, reviews, and an email-test tool.
 
@@ -44,6 +47,7 @@ A full-stack fashion storefront built with **Next.js 14 (App Router)**, **Prisma
 | Language | TypeScript |
 | Database | PostgreSQL (Neon) via Prisma ORM |
 | Auth | JWT (`jose`), bcrypt, Google OAuth |
+| AI | Google Gemini (`@google/generative-ai`) |
 | Payments | Stripe Checkout + webhooks |
 | Email | Nodemailer (SMTP) / Resend |
 | 3D | three.js, @react-three/fiber, @react-three/drei |
@@ -63,15 +67,15 @@ A full-stack fashion storefront built with **Next.js 14 (App Router)**, **Prisma
 
 ## 📸 Screenshots
 
-> Add images to `docs/screenshots/` and reference them here.
+| Storefront | 3D product viewer |
+|------------|-------------------|
+| ![Home](public/readme/buyme.png) | ![3D product viewer](public/readme/3D_view.png) |
 
-| Home | Shop | Product (3D) |
-|------|------|--------------|
-| _add_ | _add_ | _add_ |
+| Stripe checkout | AI shopping assistant |
+|-----------------|-----------------------|
+| ![Stripe checkout](public/readme/stripe%20payment.png) | ![AI shopping assistant](public/readme/Personal_chatbot.png) |
 
-| Checkout | Order tracking | Admin |
-|----------|----------------|-------|
-| _add_ | _add_ | _add_ |
+> The AI shopping assistant is documented in detail in [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md).
 
 ---
 
@@ -122,6 +126,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `STRIPE_SECRET_KEY` | — | Enables Stripe Checkout |
 | `STRIPE_WEBHOOK_SECRET` | — | Verifies Stripe webhook events |
 | `STRIPE_CURRENCY` | — | Default charge currency (e.g. `eur`) |
+| `GEMINI_API_KEY` | — | Enables the AI shopping assistant ([free key](https://aistudio.google.com/app/apikey)) |
+| `GEMINI_MODEL` | — | Model override (defaults to `gemini-2.5-flash`) |
 
 **Email tip:** Gmail needs an **App Password** (16 chars, 2-Step Verification enabled), not your normal password. Use the admin **Email test** tool to see the exact provider error if mail isn't delivering.
 
