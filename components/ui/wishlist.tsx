@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/hooks/cartcontext"
 import { useWishlist } from "@/hooks/wishlistcontext"
+import { Price } from "@/components/ui/price"
 
 export function Wishlist() {
   const { addToCart } = useCart()
@@ -50,7 +51,7 @@ export function Wishlist() {
                     >
                       {item.name}
                     </Link>
-                    <p className="text-xs sm:text-sm text-gray-400">${item.price.toFixed(2)}</p>
+                    <Price amount={item.price} className="text-xs sm:text-sm text-gray-400" />
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">

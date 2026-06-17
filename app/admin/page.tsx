@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Package, Users, ShoppingBag, TrendingUp, AlertTriangle, Mail } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { formatMoney, BASE_CURRENCY } from "@/lib/currency"
 
 type Stats = {
   totalOrders: number
@@ -71,7 +72,7 @@ export default function AdminPage() {
     { label: "Customers", value: stats ? stats.customerCount.toLocaleString() : "—", icon: Users },
     {
       label: "Revenue",
-      value: stats ? `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—",
+      value: stats ? formatMoney(stats.revenue, BASE_CURRENCY) : "—",
       icon: TrendingUp,
     },
   ]

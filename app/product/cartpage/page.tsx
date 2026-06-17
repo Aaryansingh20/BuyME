@@ -8,9 +8,10 @@ import Navbar from "@/components/pages/navbar"
 import FooterServices from "@/components/pages/footer"
 import { useCart } from "@/hooks/cartcontext"
 import { FREE_SHIPPING_THRESHOLD, computeShipping } from "@/lib/pricing"
+import { Price } from "@/components/ui/price"
 
 export default function CartPage() {
-  const { items, subtotal, updateQuantity, removeFromCart, clearCart } = useCart()
+  const { items, subtotal, updateQuantity, removeFromCart, clearCart, loading } = useCart()
 
   const shipping = computeShipping(subtotal)
   const total = subtotal + shipping
@@ -22,7 +23,22 @@ export default function CartPage() {
         <div className="container mx-auto px-4 py-10">
           <h1 className="text-3xl font-bold uppercase tracking-wider">Shopping Cart</h1>
 
-          {items.length === 0 ? (
+          {loading ? (
+            <div className="mt-8 grid gap-8 lg:grid-cols-3">
+              <div className="space-y-3 lg:col-span-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="h-20 w-20 shrink-0 animate-pulse rounded-sm bg-white/10" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-1/2 animate-pulse rounded bg-white/10" />
+                      <div className="h-3 w-1/4 animate-pulse rounded bg-white/10" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="h-48 animate-pulse rounded-xl border border-white/10 bg-white/[0.04]" />
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center py-24 text-center text-gray-400">
               <ShoppingBag className="h-12 w-12" />
               <p className="mt-4 uppercase tracking-wider">Your cart is empty.</p>
@@ -57,7 +73,7 @@ export default function CartPage() {
                           {item.size && (
                             <p className="text-xs uppercase tracking-wider text-gray-400">Size: {item.size}</p>
                           )}
-                          <p className="text-sm text-gray-400">${item.price.toFixed(2)}</p>
+                          <Price amount={item.price} className="text-sm text-gray-400" />
                         </div>
                       </div>
 
@@ -81,9 +97,10 @@ export default function CartPage() {
                           </button>
                         </div>
 
-                        <span className="w-20 text-right font-semibold text-white">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </span>
+                        <Price
+                          amount={item.price * item.quantity}
+                          className="w-20 text-right font-semibold text-white"
+                        />
 
                         <button
                           onClick={() => removeFromCart(item.slug, item.size)}
@@ -121,20 +138,20 @@ export default function CartPage() {
                   <div className="mt-6 space-y-3 text-sm">
                     <div className="flex justify-between text-gray-300">
                       <span className="uppercase tracking-wider">Subtotal</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <Price amount={subtotal} />
                     </div>
                     <div className="flex justify-between text-gray-300">
                       <span className="uppercase tracking-wider">Shipping</span>
-                      <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                      <span>{shipping === 0 ? "Free" : <Price amount={shipping} />}</span>
                     </div>
                     {shipping > 0 && (
                       <p className="text-xs text-gray-500">
-                        Add ${(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2)} more for free shipping.
+                        Add <Price amount={FREE_SHIPPING_THRESHOLD - subtotal} /> more for free shipping.
                       </p>
                     )}
                     <div className="flex justify-between border-t border-white/10 pt-3 text-base font-semibold text-white">
                       <span className="uppercase tracking-wider">Total</span>
-                      <span>${total.toFixed(2)}</span>
+                      <Price amount={total} />
                     </div>
                   </div>
                   <Link

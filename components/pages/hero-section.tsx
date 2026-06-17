@@ -10,6 +10,7 @@ import hero1 from "@/public/images/hero1.jpg"
 import hero2 from "@/public/images/hero2.jpg"
 import hero3 from "@/public/images/hero3.jpg"
 import { featuredProducts } from "@/public/data/shop"
+import { Price } from "@/components/ui/price"
 
 // Hot deals are drawn from the featured catalogue so each one links to its product page.
 const hotDeals = featuredProducts.slice(0, 9).map((p) => ({
@@ -20,25 +21,28 @@ const hotDeals = featuredProducts.slice(0, 9).map((p) => ({
 const heroContent = [
   {
     image: hero1,
-    title: "Atlier 20% off",
-    description: "Experience epic zombie-slaying action in Los Angeles",
-    price: "Starting at USD $59.99",
-    platforms: ["PS4", "XBOX", "PC"]
+    title: "New Season Drop",
+    description: "Elevated essentials cut for the city — premium fabrics, modern silhouettes.",
+    from: 34.99,
+    href: "/collection/new-arrivals",
+    tags: ["NEW", "LIMITED"],
   },
   {
     image: hero2,
-    title: "Final Sale 20% off",
-    description: "Rise, Tarnished, and be guided by grace to brandish the power of the Elden Ring",
-    price: "Starting at USD $49.99",
-    platforms: ["PS5", "XBOX", "PC"]
+    title: "Final Sale — Up to 40% Off",
+    description: "Last-chance pieces from the season's most-loved collection.",
+    from: 24.99,
+    href: "/collection/summer-sale",
+    tags: ["SALE", "TRENDING"],
   },
   {
     image: hero3,
-    title: "Final Sale upto 40% off",
-    description: "Become a cyberpunk, an urban mercenary equipped with cybernetic enhancements",
-    price: "Starting at USD $39.99",
-    platforms: ["PS4", "XBOX", "PC", "STADIA"]
-  }
+    title: "Winter Essentials",
+    description: "Layer up in tailored coats, knits and outerwear built to last.",
+    from: 49.99,
+    href: "/collection/new-arrivals",
+    tags: ["FEATURED"],
+  },
 ]
 
 export default function MonochromeHeroSectionWithReviews() {
@@ -113,34 +117,36 @@ export default function MonochromeHeroSectionWithReviews() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {/* Game Logo */}
+            {/* Title */}
             <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl lg:text-5xl uppercase tracking-wider">
               {heroContent[currentImageIndex].title}
             </h1>
 
-            {/* Game Description */}
+            {/* Description */}
             <p className="mb-4 max-w-xl text-sm text-gray-300 md:text-base uppercase tracking-wider">
               {heroContent[currentImageIndex].description}
             </p>
 
-            {/* Platform Icons */}
+            {/* Tags */}
             <div className="mb-4 flex gap-2">
-              {heroContent[currentImageIndex].platforms.map((platform, index) => (
-                <div key={index} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
-                  <span className="text-xs font-medium text-white uppercase tracking-wider">{platform}</span>
+              {heroContent[currentImageIndex].tags.map((tag, index) => (
+                <div key={index} className="flex items-center justify-center rounded-full bg-white/10 px-3 py-1 backdrop-blur-sm">
+                  <span className="text-xs font-medium text-white uppercase tracking-wider">{tag}</span>
                 </div>
               ))}
             </div>
 
             {/* CTA Section */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button 
-                className="bg-white text-black px-6 py-2 text-sm font-semibold hover:bg-gray-200 uppercase tracking-wider transition-all duration-300 ease-in-out transform hover:scale-105"
-              >
-                Pre-order Now!
-              </Button>
+              <Link href={heroContent[currentImageIndex].href}>
+                <Button
+                  className="bg-white text-black px-6 py-2 text-sm font-semibold hover:bg-gray-200 uppercase tracking-wider transition-all duration-300 ease-in-out transform hover:scale-105"
+                >
+                  Shop Now
+                </Button>
+              </Link>
               <div className="text-sm font-medium text-white">
-                {heroContent[currentImageIndex].price}
+                From <Price amount={heroContent[currentImageIndex].from} />
               </div>
             </div>
           </motion.div>
@@ -197,8 +203,8 @@ export default function MonochromeHeroSectionWithReviews() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400 line-through uppercase tracking-wider">${deal.originalPrice.toFixed(2)}</span>
-                    <span className="text-sm font-bold text-white uppercase tracking-wider">${deal.price.toFixed(2)}</span>
+                    <Price amount={deal.originalPrice} className="text-xs text-gray-400 line-through uppercase tracking-wider" />
+                    <Price amount={deal.price} className="text-sm font-bold text-white uppercase tracking-wider" />
                   </div>
                 </div>
               </Link>

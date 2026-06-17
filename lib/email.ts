@@ -1,6 +1,8 @@
 import { Resend } from "resend"
 import nodemailer from "nodemailer"
 import { getBaseUrl } from "./url"
+import { formatMoney, BASE_CURRENCY } from "./currency"
+import { pointsToMoney } from "./loyalty"
 
 // Email sender. Picks a transport in this order:
 //   1. SMTP (e.g. Gmail) — set SMTP_USER + SMTP_PASS. Delivers to ANY address,
@@ -98,7 +100,10 @@ export async function sendTestEmail(to: string): Promise<{ ok: boolean; transpor
   const status = emailStatus()
   const subject = "BuyME — test email"
   const text = "This is a test email from your BuyME store. If you received it, email is configured correctly."
-  const html = `<div style="font-family:Arial,sans-serif;padding:16px;color:#111"><h2 style="letter-spacing:2px">BUYME</h2><p>If you received this, your email provider is configured correctly. 🎉</p></div>`
+  const html = emailLayout({
+    preheader: "BuyME email test",
+    bodyHtml: `<h2 style="margin:0 0 12px;font-size:20px;color:#111">Email is working 🎉</h2><p style="margin:0">If you received this, your BuyME email provider is configured correctly.</p>`,
+  })
   try {
     if (smtpConfigured) {
       await getTransport().verify()
@@ -119,21 +124,67 @@ export async function sendTestEmail(to: string): Promise<{ ok: boolean; transpor
   }
 }
 
-export async function sendWelcomeEmail(to: string, name: string) {
+// ---- Branded layout ---------------------------------------------------------
+// Email-safe HTML (inline styles, no external assets). The logo is the BuyME
+// "B" mark + wordmark rebuilt with inline CSS so it renders identically in every
+// client — no image hosting or remote-image blocking to worry about.
+
+const brandLogo = `
+  <span style="display:inline-block;width:34px;height:34px;line-height:34px;background:#ffffff;color:#000000;font-weight:800;font-size:18px;border-radius:7px;text-align:center;vertical-align:middle;font-family:Arial,Helvetica,sans-serif">B</span>
+  <span style="vertical-align:middle;margin-left:10px;font-size:22px;font-weight:bold;letter-spacing:3px;color:#ffffff;font-family:Arial,Helvetica,sans-serif">BUY<span style="color:#8a8a8a">ME</span></span>`
+
+function brandButton(href: string, label: string): string {
+  return `<a href="${href}" style="display:inline-block;background:#111111;color:#ffffff;padding:13px 24px;text-decoration:none;border-radius:6px;text-transform:uppercase;font-size:13px;letter-spacing:1px;font-family:Arial,Helvetica,sans-serif">${label}</a>`
+}
+
+function emailLayout(opts: { preheader?: string; bodyHtml: string }): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:24px 12px;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif">
+  ${opts.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${opts.preheader}</div>` : ""}
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e7e7e9;border-radius:12px;overflow:hidden">
+    <div style="background:#000000;padding:22px 28px;text-align:center">${brandLogo}</div>
+    <div style="padding:28px;color:#111111;font-size:15px;line-height:1.55">${opts.bodyHtml}</div>
+    <div style="padding:18px 28px 26px;border-top:1px solid #eeeeee;color:#9a9a9a;font-size:12px;line-height:1.5">
+      <p style="margin:0">You're receiving this email because you have a BuyME account.</p>
+      <p style="margin:6px 0 0">© ${new Date().getFullYear()} BuyME · Modern Fashion Store</p>
+    </div>
+  </div>
+</body></html>`
+}
+
+export async function sendWelcomeEmail(
+  to: string,
+  name: string,
+  coupon?: { code: string; percent: number }
+) {
   const firstName = name?.split(" ")[0] || "there"
+
+  const couponText = coupon
+    ? `\n\nHere's ${coupon.percent}% off your first order — use code ${coupon.code} at checkout.`
+    : ""
+  const couponBlock = coupon
+    ? `<div style="margin:22px 0;padding:18px;border:1px dashed #c9c9c9;border-radius:10px;text-align:center;background:#fafafa">
+    <p style="margin:0 0 6px;font-size:12px;color:#777;text-transform:uppercase;letter-spacing:1px">Your welcome gift — ${coupon.percent}% off your first order</p>
+    <p style="margin:0;font-size:24px;font-weight:bold;letter-spacing:3px;color:#111">${coupon.code}</p>
+    <p style="margin:8px 0 0;font-size:12px;color:#999">Apply it at checkout · single use</p>
+  </div>`
+    : ""
+
   await sendEmail({
     to,
     subject: "Welcome to BuyME",
-    text: `Hi ${firstName},\n\nWelcome to BuyME — your account is ready. Explore the latest drops, save your favourites, and check out when you're ready.\n\nHappy shopping,\nThe BuyME Team`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111">
-  <h1 style="font-size:22px;letter-spacing:3px;text-transform:uppercase">BuyME</h1>
-  <p>Hi ${firstName},</p>
-  <p>Welcome to <strong>BuyME</strong> — your account is ready. Explore the latest drops, save your favourites, and check out when you're ready.</p>
-  <p style="margin:24px 0">
-    <a href="${getBaseUrl()}" style="background:#111;color:#fff;padding:12px 20px;text-decoration:none;border-radius:4px;text-transform:uppercase;font-size:13px;letter-spacing:1px">Start Shopping</a>
-  </p>
-  <p style="font-size:13px;color:#666">Happy shopping,<br/>The BuyME Team</p>
-</div>`,
+    text: `Hi ${firstName},\n\nWelcome to BuyME — your account is ready. Explore the latest drops, save your favourites, and check out when you're ready.${couponText}\n\nHappy shopping,\nThe BuyME Team`,
+    html: emailLayout({
+      preheader: coupon
+        ? `Welcome to BuyME — here's ${coupon.percent}% off your first order.`
+        : "Your BuyME account is ready — let's go shopping.",
+      bodyHtml: `
+  <h2 style="margin:0 0 16px;font-size:20px;color:#111">Welcome, ${firstName} 👋</h2>
+  <p style="margin:0 0 12px">Your <strong>BuyME</strong> account is ready. Explore the latest drops, save your favourites, and check out whenever you're ready.</p>
+  ${couponBlock}
+  <p style="margin:24px 0">${brandButton(getBaseUrl(), "Start Shopping")}</p>
+  <p style="margin:0;font-size:13px;color:#666">Happy shopping,<br/>The BuyME Team</p>`,
+    }),
   })
 }
 
@@ -146,6 +197,7 @@ type OrderEmailData = {
   discount: number
   total: number
   couponCode: string | null
+  pointsRedeemed: number
   shippingAddress: string | null
   paymentLabel: string | null
 }
@@ -153,7 +205,7 @@ type OrderEmailData = {
 export async function sendOrderConfirmationEmail(to: string, name: string, order: OrderEmailData) {
   const firstName = name?.split(" ")[0] || "there"
   const orderNo = order.id.slice(-6).toUpperCase()
-  const money = (n: number) => `$${n.toFixed(2)}`
+  const money = (n: number) => formatMoney(n, BASE_CURRENCY)
 
   const itemsText = order.items
     .map((i) => `  - ${i.name}${i.size ? ` (${i.size})` : ""} x${i.quantity} — ${money(i.price * i.quantity)}`)
@@ -167,7 +219,7 @@ Order #${orderNo}
 ${itemsText}
 
 Subtotal: ${money(order.subtotal)}
-${order.discount > 0 ? `Discount${order.couponCode ? ` (${order.couponCode})` : ""}: -${money(order.discount)}\n` : ""}Shipping: ${order.shipping === 0 ? "Free" : money(order.shipping)}
+${order.discount > 0 ? `Discount${order.couponCode ? ` (${order.couponCode})` : ""}: -${money(order.discount)}\n` : ""}${order.pointsRedeemed > 0 ? `Points (${order.pointsRedeemed}): -${money(pointsToMoney(order.pointsRedeemed))}\n` : ""}Shipping: ${order.shipping === 0 ? "Free" : money(order.shipping)}
 Total: ${money(order.total)}
 ${order.shippingAddress ? `\nShip to: ${order.shippingAddress}` : ""}${order.paymentLabel ? `\nPaid with: ${order.paymentLabel}` : ""}
 
@@ -184,25 +236,25 @@ You can view your orders any time in your BuyME profile.
     )
     .join("")
 
-  const html = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111">
-  <h1 style="font-size:22px;letter-spacing:3px;text-transform:uppercase">BuyME</h1>
-  <p>Hi ${firstName},</p>
-  <p>Thanks for your order! We've received it and it's now being processed.</p>
-  <p style="font-size:14px;color:#666;text-transform:uppercase;letter-spacing:1px">Order #${orderNo}</p>
-  <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:8px">${itemRows}</table>
+  const html = emailLayout({
+    preheader: `Order #${orderNo} confirmed — ${money(order.total)}`,
+    bodyHtml: `
+  <h2 style="margin:0 0 16px;font-size:20px;color:#111">Thanks for your order, ${firstName}!</h2>
+  <p style="margin:0 0 4px">We've received it and it's now being processed.</p>
+  <p style="font-size:13px;color:#666;text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px">Order #${orderNo}</p>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:4px">${itemRows}</table>
   <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px">
     <tr><td style="padding:4px 0">Subtotal</td><td style="padding:4px 0;text-align:right">${money(order.subtotal)}</td></tr>
     ${order.discount > 0 ? `<tr><td style="padding:4px 0;color:#0a0">Discount${order.couponCode ? ` (${order.couponCode})` : ""}</td><td style="padding:4px 0;text-align:right;color:#0a0">-${money(order.discount)}</td></tr>` : ""}
+    ${order.pointsRedeemed > 0 ? `<tr><td style="padding:4px 0;color:#b8860b">Points (${order.pointsRedeemed})</td><td style="padding:4px 0;text-align:right;color:#b8860b">-${money(pointsToMoney(order.pointsRedeemed))}</td></tr>` : ""}
     <tr><td style="padding:4px 0">Shipping</td><td style="padding:4px 0;text-align:right">${order.shipping === 0 ? "Free" : money(order.shipping)}</td></tr>
     <tr><td style="padding:8px 0;border-top:1px solid #111;font-weight:bold">Total</td><td style="padding:8px 0;border-top:1px solid #111;text-align:right;font-weight:bold">${money(order.total)}</td></tr>
   </table>
   ${order.shippingAddress ? `<p style="font-size:13px;color:#666;margin-top:16px">Ship to: ${order.shippingAddress}</p>` : ""}
   ${order.paymentLabel ? `<p style="font-size:13px;color:#666;margin-top:4px">Paid with: ${order.paymentLabel}</p>` : ""}
-  <p style="margin:24px 0">
-    <a href="${getBaseUrl()}/product/profile?tab=orders" style="background:#111;color:#fff;padding:12px 20px;text-decoration:none;border-radius:4px;text-transform:uppercase;font-size:13px;letter-spacing:1px">View Your Orders</a>
-  </p>
-  <p style="font-size:13px;color:#666">— The BuyME Team</p>
-</div>`
+  <p style="margin:24px 0">${brandButton(`${getBaseUrl()}/product/profile?tab=orders`, "View Your Orders")}</p>
+  <p style="margin:0;font-size:13px;color:#666">— The BuyME Team</p>`,
+  })
 
   await sendEmail({ to, subject: `Order confirmed — #${orderNo}`, text, html })
 }
@@ -212,13 +264,13 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     to,
     subject: "Reset your BuyME password",
     text: `We received a request to reset your password.\n\nReset it here (valid for 30 minutes):\n${resetUrl}\n\nIf you didn't request this, you can ignore this email.`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111">
-  <h1 style="font-size:20px;letter-spacing:2px;text-transform:uppercase">BuyME</h1>
-  <p>We received a request to reset your password.</p>
-  <p style="margin:24px 0">
-    <a href="${resetUrl}" style="background:#111;color:#fff;padding:12px 20px;text-decoration:none;border-radius:4px;text-transform:uppercase;font-size:13px;letter-spacing:1px">Reset Password</a>
-  </p>
-  <p style="font-size:13px;color:#666">This link is valid for 30 minutes. If you didn't request this, you can safely ignore this email.</p>
-</div>`,
+    html: emailLayout({
+      preheader: "Reset your BuyME password (link valid for 30 minutes).",
+      bodyHtml: `
+  <h2 style="margin:0 0 16px;font-size:20px;color:#111">Reset your password</h2>
+  <p style="margin:0 0 12px">We received a request to reset your BuyME password. Click below to choose a new one.</p>
+  <p style="margin:24px 0">${brandButton(resetUrl, "Reset Password")}</p>
+  <p style="margin:0;font-size:13px;color:#666">This link is valid for 30 minutes. If you didn't request this, you can safely ignore this email.</p>`,
+    }),
   })
 }

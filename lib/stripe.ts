@@ -7,11 +7,8 @@ const secretKey = process.env.STRIPE_SECRET_KEY
 export const stripe = secretKey ? new Stripe(secretKey) : null
 export const stripeEnabled = Boolean(secretKey)
 
-// Charge currency. Default USD; set STRIPE_CURRENCY=inr (etc.) to charge in ₹.
-export const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || "usd").toLowerCase()
-
-// Convert a major-unit amount (e.g. dollars/rupees) to the smallest unit Stripe
-// expects (cents/paise). Zero-decimal currencies (JPY, etc.) are not used here.
-export function toMinorUnits(amount: number): number {
-  return Math.round(amount * 100)
-}
+// Default charge currency when the shopper hasn't picked one. Matches the base
+// currency (EUR); override with STRIPE_CURRENCY. The actual charge currency is
+// chosen per-checkout from the shopper's selected display currency, and the
+// minor-unit conversion lives in lib/currency.ts (toStripeMinorUnits).
+export const STRIPE_CURRENCY = (process.env.STRIPE_CURRENCY || "eur").toLowerCase()

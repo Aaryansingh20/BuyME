@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Camera, Award, Package, Heart, Wallet, CalendarDays } from "lucide-react"
+import { Camera, Award, Package, Heart, Wallet, CalendarDays, Shuffle } from "lucide-react"
+import { useCurrency } from "@/hooks/currencycontext"
+import { randomAvatarUrl } from "@/lib/avatar"
 
 interface User {
   name: string
@@ -47,6 +49,7 @@ export function ProfileInfo({ user, setUser }: ProfileInfoProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedUser, setEditedUser] = useState<User>(user)
   const [overview, setOverview] = useState<Overview | null>(null)
+  const { format } = useCurrency()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -78,13 +81,33 @@ export function ProfileInfo({ user, setUser }: ProfileInfoProps) {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setEditedUser({ ...editedUser, avatar: reader.result as string })
+    if (!file) return
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string
+      // Downscale + center-crop to a 256×256 JPEG before storing. Avatars live in
+      // a DB text column, so this keeps rows small instead of saving the raw photo.
+      const img = new window.Image()
+      img.onload = () => {
+        const SIZE = 256
+        const canvas = document.createElement("canvas")
+        canvas.width = SIZE
+        canvas.height = SIZE
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          setEditedUser((prev) => ({ ...prev, avatar: dataUrl }))
+          return
+        }
+        const side = Math.min(img.width, img.height)
+        const sx = (img.width - side) / 2
+        const sy = (img.height - side) / 2
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE)
+        setEditedUser((prev) => ({ ...prev, avatar: canvas.toDataURL("image/jpeg", 0.82) }))
       }
-      reader.readAsDataURL(file)
+      img.onerror = () => setEditedUser((prev) => ({ ...prev, avatar: dataUrl }))
+      img.src = dataUrl
     }
+    reader.readAsDataURL(file)
   }
 
   const completenessFields = [user.phone, user.dateOfBirth, user.gender, user.address, user.avatar]
@@ -114,9 +137,20 @@ export function ProfileInfo({ user, setUser }: ProfileInfoProps) {
               size="icon"
               className="absolute bottom-0 right-0 rounded-full bg-white text-black hover:bg-gray-200"
               onClick={() => fileInputRef.current?.click()}
+              title="Upload a photo"
             >
               <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
+            {isEditing && (
+              <Button
+                size="icon"
+                className="absolute bottom-0 left-0 rounded-full bg-white text-black hover:bg-gray-200"
+                onClick={() => setEditedUser({ ...editedUser, avatar: randomAvatarUrl(editedUser.email) })}
+                title="Shuffle a new avatar"
+              >
+                <Shuffle className="h-3 w-3 sm:h-4 sm:w-4" />
+              </Button>
+            )}
             <Input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" />
           </div>
           <div className="text-center sm:text-left">
@@ -280,7 +314,7 @@ export function ProfileInfo({ user, setUser }: ProfileInfoProps) {
                 <StatTile
                   icon={Wallet}
                   label="Total Spent"
-                  value={overview ? `$${overview.totalSpent.toFixed(2)}` : "—"}
+                  value={overview ? format(overview.totalSpent) : "—"}
                 />
                 <StatTile icon={CalendarDays} label="Member Since" value={overview ? overview.memberSince : "—"} />
               </div>

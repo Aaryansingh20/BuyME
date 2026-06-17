@@ -115,6 +115,7 @@ model Order {
   discount        Float       @default(0)
   total           Float
   couponCode      String?
+  pointsRedeemed  Int         @default(0) // loyalty points spent on this order
   shippingAddress String?
   paymentLabel    String?
   status          String      @default("Processing")

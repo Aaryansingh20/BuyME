@@ -16,6 +16,8 @@ import {
 import { useCart } from "@/hooks/cartcontext"
 import { useWishlist } from "@/hooks/wishlistcontext"
 import { Logo } from "@/components/ui/logo"
+import { Price } from "@/components/ui/price"
+import { CurrencySwitcher } from "@/components/ui/currency-switcher"
 
 export default function Navbar() {
   const { count: cartCount, subtotal } = useCart();
@@ -268,7 +270,8 @@ export default function Navbar() {
                 <span className="sr-only uppercase tracking-wider">Cart</span>
               </Button>
               </Link>
-              <span className="text-sm hidden sm:inline-block text-white uppercase tracking-wider">${subtotal.toFixed(2)}</span>
+              <CurrencySwitcher />
+              <Price amount={subtotal} className="text-sm hidden sm:inline-block text-white uppercase tracking-wider" />
             </div>
           </div>
         </div>

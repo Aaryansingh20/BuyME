@@ -3,6 +3,7 @@ import Link from "next/link"
 import urbanClothes1 from "@/public/images/one-3view.jpg"
 import urbanClothes2 from "@/public/images/two-3view.jpg"
 import urbanClothes3 from "@/public/images/three-3view.jpg"
+import { Price } from "@/components/ui/price"
 
 export default function BestsellerSection() {
   return (
@@ -23,7 +24,7 @@ export default function BestsellerSection() {
               </div>
               <div className="mt-3 flex justify-between items-center">
                 <p className="text-sm text-gray-400">Dark series jacket</p>
-                <p className="text-sm">$95</p>
+                <Price amount={95} className="text-sm" />
               </div>
             </div>
           </Link>
@@ -41,7 +42,7 @@ export default function BestsellerSection() {
               </div>
               <div className="mt-3 flex justify-between items-center">
                 <p className="text-sm text-gray-400">Urban style coat</p>
-                <p className="text-sm">$85</p>
+                <Price amount={85} className="text-sm" />
               </div>
             </div>
           </Link>
@@ -59,7 +60,7 @@ export default function BestsellerSection() {
               </div>
               <div className="mt-3 flex justify-between items-center">
                 <p className="text-sm text-gray-400">Classic noir wear</p>
-                <p className="text-sm">$75</p>
+                <Price amount={75} className="text-sm" />
               </div>
             </div>
           </Link>

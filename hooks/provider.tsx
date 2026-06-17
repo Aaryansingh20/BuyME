@@ -2,11 +2,21 @@
 
 import { CartProvider } from "@/hooks/cartcontext";
 import { WishlistProvider } from "@/hooks/wishlistcontext";
+import { CurrencyProvider } from "@/hooks/currencycontext";
+import type { CurrencyCode } from "@/lib/currency";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  initialCurrency,
+  children,
+}: {
+  initialCurrency: CurrencyCode;
+  children: React.ReactNode;
+}) {
   return (
-    <CartProvider>
-      <WishlistProvider>{children}</WishlistProvider>
-    </CartProvider>
+    <CurrencyProvider initialCurrency={initialCurrency}>
+      <CartProvider>
+        <WishlistProvider>{children}</WishlistProvider>
+      </CartProvider>
+    </CurrencyProvider>
   );
 }

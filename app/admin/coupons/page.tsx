@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatMoney, BASE_CURRENCY } from "@/lib/currency"
 
 type Coupon = {
   id: string
@@ -86,7 +87,7 @@ export default function AdminCouponsPage() {
     if (res.ok) setCoupons((list) => list.filter((x) => x.id !== id))
   }
 
-  const fmtValue = (c: Coupon) => (c.type === "percent" ? `${c.value}%` : `$${c.value.toFixed(2)}`)
+  const fmtValue = (c: Coupon) => (c.type === "percent" ? `${c.value}%` : formatMoney(c.value, BASE_CURRENCY))
 
   return (
     <>
@@ -178,7 +179,7 @@ export default function AdminCouponsPage() {
                 <TableRow key={c.id} className="border-white/10 hover:bg-white/[0.02]">
                   <TableCell className="font-mono font-medium text-white">{c.code}</TableCell>
                   <TableCell className="text-gray-300">{fmtValue(c)}</TableCell>
-                  <TableCell className="text-gray-400">{c.minSubtotal > 0 ? `$${c.minSubtotal.toFixed(2)}` : "—"}</TableCell>
+                  <TableCell className="text-gray-400">{c.minSubtotal > 0 ? formatMoney(c.minSubtotal, BASE_CURRENCY) : "—"}</TableCell>
                   <TableCell className="text-gray-400">
                     {c.timesUsed}
                     {c.maxRedemptions !== null ? ` / ${c.maxRedemptions}` : ""}

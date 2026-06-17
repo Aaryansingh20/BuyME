@@ -1,4 +1,5 @@
 import { round2 } from "./pricing"
+import { formatMoney, BASE_CURRENCY } from "./currency"
 
 // Minimal shape we need to evaluate a coupon — matches the Prisma Coupon model.
 export type CouponLike = {
@@ -29,7 +30,7 @@ export function evaluateCoupon(coupon: CouponLike | null, subtotal: number): Cou
     return { ok: false, error: "This coupon is no longer available" }
   }
   if (subtotal < coupon.minSubtotal) {
-    return { ok: false, error: `Spend at least $${coupon.minSubtotal.toFixed(2)} to use this code` }
+    return { ok: false, error: `Spend at least ${formatMoney(coupon.minSubtotal, BASE_CURRENCY)} to use this code` }
   }
 
   const raw = coupon.type === "percent" ? (subtotal * coupon.value) / 100 : coupon.value

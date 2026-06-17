@@ -26,6 +26,8 @@ type Order = {
   user: { name: string; email: string }
 }
 
+import { formatMoney, BASE_CURRENCY } from "@/lib/currency"
+
 const STATUSES = ["Processing", "Shipped", "Delivered", "Cancelled"]
 
 const statusColor: Record<string, string> = {
@@ -105,7 +107,7 @@ export default function AdminOrdersPage() {
     <>
       <h1 className="text-3xl font-bold uppercase tracking-wider">Orders</h1>
       <p className="mt-2 text-sm uppercase tracking-wider text-gray-400">
-        {orders.length} orders · ${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} revenue
+        {orders.length} orders · {formatMoney(revenue, BASE_CURRENCY)} revenue
       </p>
 
       <div className="mt-8 rounded-xl border border-white/10 bg-white/[0.04]">
@@ -149,7 +151,7 @@ export default function AdminOrdersPage() {
                       <span className="mt-1 block text-red-400/80">Reason: {o.cancelReason}</span>
                     )}
                   </TableCell>
-                  <TableCell className="font-semibold text-white">${o.total.toFixed(2)}</TableCell>
+                  <TableCell className="font-semibold text-white">{formatMoney(o.total, BASE_CURRENCY)}</TableCell>
                   <TableCell className="text-xs text-gray-400">
                     {new Date(o.createdAt).toLocaleDateString()}
                   </TableCell>

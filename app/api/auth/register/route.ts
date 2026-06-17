@@ -4,6 +4,8 @@ import { hashPassword } from "@/lib/password"
 import { sendWelcomeEmail } from "@/lib/email"
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from "@/lib/auth"
 import { rateLimit, clientIp } from "@/lib/rate-limit"
+import { randomAvatarUrl } from "@/lib/avatar"
+import { issueWelcomeCoupon } from "@/lib/welcome-coupon"
 
 export const runtime = "nodejs"
 
@@ -47,16 +49,21 @@ export async function POST(req: Request) {
       email,
       passwordHash: await hashPassword(password),
       role: "user",
+      // Give every new account a fun generated avatar — they can replace it later.
+      avatar: randomAvatarUrl(email),
       notifications: {
         create: { message: `Welcome to BuyME, ${name}! Your account is ready.` },
       },
     },
   })
 
+  // One welcome coupon per new account, included in the welcome email.
+  const welcomeCoupon = await issueWelcomeCoupon()
+
   // Fire-and-forget so a mail hiccup never blocks signup. Log failures so a
   // misconfigured provider (e.g. Resend sandbox rejecting non-owner addresses)
   // is visible in the server logs instead of failing silently.
-  sendWelcomeEmail(user.email, user.name).catch((err) =>
+  sendWelcomeEmail(user.email, user.name, welcomeCoupon ?? undefined).catch((err) =>
     console.error("[register] welcome email failed:", err)
   )
 

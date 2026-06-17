@@ -11,6 +11,9 @@ import sweater from "@/public/shop/knit-pullover-sweater.jpg"
 import blazer from "@/public/shop/tailored-blazer.jpg"
 import denim from "@/public/shop/denim-jacket.jpg"
 import trousers from "@/public/shop/pleated-trousers.jpg"
+import darkSeries3View from "@/public/images/one-3view.jpg"
+import urbanCoat3View from "@/public/images/two-3view.jpg"
+import classicNoir3View from "@/public/images/three-3view.jpg"
 
 export interface ShopProduct {
   slug: string
@@ -20,6 +23,8 @@ export interface ShopProduct {
   rating: number
   image: string | StaticImageData
   featured?: boolean
+  /** Path to a .glb model in /public for the interactive 3D viewer, if any. */
+  model3d?: string
 }
 
 // Helper for Unsplash clothing photography (domain allow-listed in next.config).
@@ -39,6 +44,11 @@ export const shopProducts: ShopProduct[] = [
   { slug: "tailored-blazer", name: "Tailored Blazer", category: "Formal Wear", price: 159.99, rating: 5, image: blazer, featured: true },
   { slug: "denim-jacket", name: "Denim Jacket", category: "Jackets", price: 109.99, rating: 4, image: denim, featured: true },
   { slug: "pleated-trousers", name: "Pleated Trousers", category: "Pants", price: 84.99, rating: 4, image: trousers, featured: true },
+
+  // ---- 3D-enabled hero products (interactive .glb viewer on the product page) ----
+  { slug: "dark-series-jacket", name: "Dark Series Jacket", category: "Jackets", price: 95, rating: 5, image: darkSeries3View, featured: true, model3d: "/3dmodel/dark-series-jacket.glb" },
+  { slug: "urban-style-coat", name: "Urban Style Coat", category: "Coats", price: 85, rating: 4, image: urbanCoat3View, featured: true, model3d: "/3dmodel/hoodie.glb" },
+  { slug: "classic-noir-wear", name: "Classic Noir Wear", category: "Jackets", price: 75, rating: 5, image: classicNoir3View, featured: true, model3d: "/3dmodel/one-piece.glb" },
 
   // ---- Full catalogue (discoverable via search / all-products) ----
   // T-Shirts
@@ -260,9 +270,12 @@ export function getRelatedProducts(slug: string, limit = 4): ShopProduct[] {
 }
 
 export function searchProducts(query: string): ShopProduct[] {
-  const term = query.trim().toLowerCase()
-  if (!term) return []
-  return shopProducts.filter(
-    (p) => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term)
-  )
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return []
+  // Every term must appear somewhere in the name or category, so multi-word
+  // queries like "black jeans" narrow results instead of matching either word.
+  return shopProducts.filter((p) => {
+    const haystack = `${p.name} ${p.category}`.toLowerCase()
+    return terms.every((t) => haystack.includes(t))
+  })
 }

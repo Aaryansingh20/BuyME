@@ -10,8 +10,12 @@ import { Input } from "@/components/ui/input"
 import Navbar from "@/components/pages/navbar"
 import FooterServices from "@/components/pages/footer"
 import { useCart } from "@/hooks/cartcontext"
+import { useCurrency } from "@/hooks/currencycontext"
 import { FREE_SHIPPING_THRESHOLD, computeShipping } from "@/lib/pricing"
 import { AddressFields, emptyAddressForm } from "@/components/ui/address-fields"
+import { Price } from "@/components/ui/price"
+import { maxRedeemablePoints, pointsToMoney } from "@/lib/loyalty"
+import { Sparkles } from "lucide-react"
 
 type Address = { id: string; name: string; address: string; phone: string | null; isDefault: boolean }
 type PaymentMethod = { id: string; type: string; last4: string | null; expiryDate: string | null; email: string | null }
@@ -20,6 +24,7 @@ type Applied = { code: string; discount: number }
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, subtotal, reloadCart } = useCart()
+  const { currency } = useCurrency()
 
   const [addresses, setAddresses] = useState<Address[]>([])
   const [methods, setMethods] = useState<PaymentMethod[]>([])
@@ -41,6 +46,9 @@ export default function CheckoutPage() {
   const [applied, setApplied] = useState<Applied | null>(null)
   const [couponError, setCouponError] = useState("")
   const [checkingCoupon, setCheckingCoupon] = useState(false)
+
+  const [availablePoints, setAvailablePoints] = useState(0)
+  const [usePointsOn, setUsePointsOn] = useState(false)
 
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState("")
@@ -68,12 +76,22 @@ export default function CheckoutPage() {
       .then((d) => setStripeEnabled(Boolean(d?.stripe)))
       .catch(() => {})
 
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setAvailablePoints(d?.user?.loyaltyPoints ?? 0))
+      .catch(() => {})
+
     setCanceled(new URLSearchParams(window.location.search).get("canceled") === "1")
   }, [])
 
   const discount = applied?.discount ?? 0
   const shipping = computeShipping(subtotal)
-  const total = Math.max(0, subtotal - discount) + shipping
+  const payableBeforePoints = Math.max(0, subtotal - discount)
+  // Most points usable on this order, then how many we'll actually redeem.
+  const maxPoints = maxRedeemablePoints(availablePoints, payableBeforePoints)
+  const redeemPoints = usePointsOn ? maxPoints : 0
+  const pointsDiscount = pointsToMoney(redeemPoints)
+  const total = Math.max(0, payableBeforePoints - pointsDiscount) + shipping
 
   const applyCoupon = async () => {
     setCouponError("")
@@ -188,6 +206,8 @@ export default function CheckoutPage() {
           addressId: addressId || undefined,
           paymentMethodId: paymentMethodId || undefined,
           couponCode: applied?.code,
+          currency,
+          redeemPoints,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -451,7 +471,7 @@ export default function CheckoutPage() {
                         {item.size ? `Size ${item.size} · ` : ""}Qty {item.quantity}
                       </p>
                     </div>
-                    <span className="font-semibold text-white">${(item.price * item.quantity).toFixed(2)}</span>
+                    <Price amount={item.price * item.quantity} className="font-semibold text-white" />
                   </div>
                 ))}
               </section>
@@ -495,29 +515,61 @@ export default function CheckoutPage() {
                   {couponError && <p className="mt-2 text-xs text-red-400">{couponError}</p>}
                 </div>
 
+                {/* Loyalty points */}
+                {availablePoints > 0 && maxPoints > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setUsePointsOn((v) => !v)}
+                    className={`mt-3 flex w-full items-center justify-between rounded-sm border px-3 py-2 text-left text-sm transition-colors ${
+                      usePointsOn
+                        ? "border-amber-400/40 bg-amber-400/10 text-amber-300"
+                        : "border-white/15 text-gray-300 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="uppercase tracking-wider">
+                        {usePointsOn ? `Using ${maxPoints} points` : `Use ${maxPoints} points`}
+                      </span>
+                    </span>
+                    <span className="inline-flex">−<Price amount={pointsToMoney(maxPoints)} /></span>
+                  </button>
+                )}
+                {availablePoints > 0 && (
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-gray-500">
+                    You have {availablePoints} loyalty points (worth <Price amount={pointsToMoney(availablePoints)} />)
+                  </p>
+                )}
+
                 <div className="mt-6 space-y-3 text-sm">
                   <div className="flex justify-between text-gray-300">
                     <span className="uppercase tracking-wider">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <Price amount={subtotal} />
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-green-400">
                       <span className="uppercase tracking-wider">Discount</span>
-                      <span>−${discount.toFixed(2)}</span>
+                      <span className="inline-flex">−<Price amount={discount} /></span>
+                    </div>
+                  )}
+                  {redeemPoints > 0 && (
+                    <div className="flex justify-between text-amber-300">
+                      <span className="uppercase tracking-wider">Points ({redeemPoints})</span>
+                      <span className="inline-flex">−<Price amount={pointsDiscount} /></span>
                     </div>
                   )}
                   <div className="flex justify-between text-gray-300">
                     <span className="uppercase tracking-wider">Shipping</span>
-                    <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                    <span>{shipping === 0 ? "Free" : <Price amount={shipping} />}</span>
                   </div>
                   {shipping > 0 && (
                     <p className="text-xs text-gray-500">
-                      Add ${(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2)} more for free shipping.
+                      Add <Price amount={FREE_SHIPPING_THRESHOLD - subtotal} /> more for free shipping.
                     </p>
                   )}
                   <div className="flex justify-between border-t border-white/10 pt-3 text-base font-semibold text-white">
                     <span className="uppercase tracking-wider">Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <Price amount={total} />
                   </div>
                 </div>
 

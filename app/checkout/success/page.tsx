@@ -7,6 +7,8 @@ import { CheckCircle2, Clock } from "lucide-react"
 import Navbar from "@/components/pages/navbar"
 import FooterServices from "@/components/pages/footer"
 import { useCart } from "@/hooks/cartcontext"
+import { Price } from "@/components/ui/price"
+import { pointsToMoney } from "@/lib/loyalty"
 
 type OrderItem = { id: string; name: string; quantity: number; price: number; size: string }
 type Order = {
@@ -16,6 +18,7 @@ type Order = {
   discount: number
   total: number
   couponCode: string | null
+  pointsRedeemed: number
   shippingAddress: string | null
   paymentLabel: string | null
   status: string
@@ -93,28 +96,34 @@ function SuccessInner() {
                   {i.name}
                   {i.size ? ` (${i.size})` : ""} × {i.quantity}
                 </span>
-                <span className="text-white">${(i.price * i.quantity).toFixed(2)}</span>
+                <Price amount={i.price * i.quantity} className="text-white" />
               </div>
             ))}
           </div>
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between text-gray-300">
               <span className="uppercase tracking-wider">Subtotal</span>
-              <span>${order.subtotal.toFixed(2)}</span>
+              <Price amount={order.subtotal} />
             </div>
             {order.discount > 0 && (
               <div className="flex justify-between text-green-400">
                 <span className="uppercase tracking-wider">Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span>
-                <span>−${order.discount.toFixed(2)}</span>
+                <span className="inline-flex">−<Price amount={order.discount} /></span>
+              </div>
+            )}
+            {order.pointsRedeemed > 0 && (
+              <div className="flex justify-between text-amber-300">
+                <span className="uppercase tracking-wider">Points ({order.pointsRedeemed})</span>
+                <span className="inline-flex">−<Price amount={pointsToMoney(order.pointsRedeemed)} /></span>
               </div>
             )}
             <div className="flex justify-between text-gray-300">
               <span className="uppercase tracking-wider">Shipping</span>
-              <span>{order.shipping === 0 ? "Free" : `$${order.shipping.toFixed(2)}`}</span>
+              <span>{order.shipping === 0 ? "Free" : <Price amount={order.shipping} />}</span>
             </div>
             <div className="flex justify-between border-t border-white/10 pt-2 text-base font-semibold text-white">
               <span className="uppercase tracking-wider">Total</span>
-              <span>${order.total.toFixed(2)}</span>
+              <Price amount={order.total} />
             </div>
           </div>
           {(order.shippingAddress || order.paymentLabel) && (

@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     addressId: typeof body.addressId === "string" ? body.addressId : undefined,
     paymentMethodId: typeof body.paymentMethodId === "string" ? body.paymentMethodId : undefined,
     couponCode: typeof body.couponCode === "string" ? body.couponCode : undefined,
+    redeemPoints: typeof body.redeemPoints === "number" ? body.redeemPoints : undefined,
     paymentStatus: "paid",
   })
   if (!result.ok) {

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useCart } from "@/hooks/cartcontext"
 import { shopProducts } from "@/public/data/shop"
+import { Price } from "@/components/ui/price"
 
 interface Order {
   id: string
@@ -129,7 +130,7 @@ export function OrderHistory({ orders, onCancel }: OrderHistoryProps) {
                     </div>
                   </div>
                   <div className="text-left sm:text-right">
-                    <p className="font-medium text-sm sm:text-base text-white">${order.total.toFixed(2)}</p>
+                    <Price amount={order.total} className="font-medium text-sm sm:text-base text-white" />
                     <p className={`text-xs sm:text-sm uppercase tracking-wider ${statusColor[order.status] ?? "text-gray-400"}`}>
                       {order.status}
                     </p>

@@ -2,10 +2,15 @@ import type { Prisma } from "@prisma/client"
 import { prisma } from "./prisma"
 import { computeShipping, round2 } from "./pricing"
 import { evaluateCoupon, normalizeCode } from "./coupons"
+import { formatMoney, BASE_CURRENCY } from "./currency"
+import { loyaltyPointsFor, pointsToMoney, maxRedeemablePoints } from "./loyalty"
 
 type ReversibleOrder = {
   userId: string
   couponCode: string | null
+  subtotal: number
+  pointsRedeemed: number
+  paymentStatus: string
   items: { slug: string; quantity: number }[]
 }
 
@@ -35,6 +40,17 @@ export async function reverseOrderEffects(tx: Prisma.TransactionClient, order: R
       await tx.couponRedemption.deleteMany({ where: { couponId: coupon.id, userId: order.userId } })
     }
   }
+
+  // Undo the loyalty effects of a paid order: claw back what was earned and
+  // refund any points the shopper redeemed. Clamped so the balance stays >= 0.
+  if (order.paymentStatus === "paid") {
+    const netUndo = order.pointsRedeemed - loyaltyPointsFor(order.subtotal)
+    if (netUndo !== 0) {
+      const user = await tx.user.findUnique({ where: { id: order.userId }, select: { loyaltyPoints: true } })
+      const next = Math.max(0, (user?.loyaltyPoints ?? 0) + netUndo)
+      await tx.user.update({ where: { id: order.userId }, data: { loyaltyPoints: next } })
+    }
+  }
 }
 
 export type PlaceOrderOpts = {
@@ -42,6 +58,7 @@ export type PlaceOrderOpts = {
   addressId?: string
   paymentMethodId?: string
   couponCode?: string
+  redeemPoints?: number
   status?: string
   paymentStatus?: string
   // When false (Stripe path), the order is created as a pending record only —
@@ -115,7 +132,15 @@ export async function placeOrderForUser(opts: PlaceOrderOpts): Promise<PlaceOrde
         appliedCouponId = coupon!.id
       }
 
-      const total = round2(Math.max(0, subtotal - discount) + shipping)
+      // Loyalty redemption: spend points for an extra discount, capped by the
+      // user's balance and by what's still payable (points can't go negative).
+      const payableBeforePoints = round2(Math.max(0, subtotal - discount))
+      const requestedPoints = Math.max(0, Math.floor(opts.redeemPoints ?? 0))
+      const dbUser = await tx.user.findUnique({ where: { id: opts.userId }, select: { loyaltyPoints: true } })
+      const pointsRedeemed = Math.min(requestedPoints, maxRedeemablePoints(dbUser?.loyaltyPoints ?? 0, payableBeforePoints))
+      const pointsDiscount = round2(pointsToMoney(pointsRedeemed))
+
+      const total = round2(Math.max(0, payableBeforePoints - pointsDiscount) + shipping)
 
       const created = await tx.order.create({
         data: {
@@ -125,6 +150,7 @@ export async function placeOrderForUser(opts: PlaceOrderOpts): Promise<PlaceOrde
           discount,
           total,
           couponCode: appliedCode,
+          pointsRedeemed,
           shippingAddress,
           paymentLabel,
           status: opts.status ?? "Processing",
@@ -156,12 +182,19 @@ export async function placeOrderForUser(opts: PlaceOrderOpts): Promise<PlaceOrde
           })
         }
         await tx.cartItem.deleteMany({ where: { userId: opts.userId } })
+        // Net points: earn on subtotal, spend any redeemed. Balance stays >= 0
+        // because pointsRedeemed was capped by the current balance above.
+        const earned = loyaltyPointsFor(subtotal)
+        const netPoints = earned - pointsRedeemed
+        if (netPoints !== 0) {
+          await tx.user.update({ where: { id: opts.userId }, data: { loyaltyPoints: { increment: netPoints } } })
+        }
         await tx.notification.create({
           data: {
             userId: opts.userId,
             message: `Order #${created.id.slice(-6).toUpperCase()} placed — ${cart.length} item${
               cart.length === 1 ? "" : "s"
-            } for $${total.toFixed(2)}.`,
+            } for ${formatMoney(total, BASE_CURRENCY)}.${earned > 0 ? ` You earned ${earned} loyalty points.` : ""}`,
           },
         })
       }
@@ -212,10 +245,19 @@ export async function commitOrder(
     }
 
     await tx.cartItem.deleteMany({ where: { userId: existing.userId } })
+    // Earn on subtotal, spend any points redeemed at checkout. Clamp the result
+    // so a balance change between order creation and payment can't go negative.
+    const earned = loyaltyPointsFor(existing.subtotal)
+    const netPoints = earned - existing.pointsRedeemed
+    if (netPoints !== 0) {
+      const u = await tx.user.findUnique({ where: { id: existing.userId }, select: { loyaltyPoints: true } })
+      const next = Math.max(0, (u?.loyaltyPoints ?? 0) + netPoints)
+      await tx.user.update({ where: { id: existing.userId }, data: { loyaltyPoints: next } })
+    }
     await tx.notification.create({
       data: {
         userId: existing.userId,
-        message: `Order #${existing.id.slice(-6).toUpperCase()} confirmed — payment received ($${existing.total.toFixed(2)}).`,
+        message: `Order #${existing.id.slice(-6).toUpperCase()} confirmed — payment received (${formatMoney(existing.total, BASE_CURRENCY)}).${earned > 0 ? ` You earned ${earned} loyalty points.` : ""}`,
       },
     })
     return tx.order.update({

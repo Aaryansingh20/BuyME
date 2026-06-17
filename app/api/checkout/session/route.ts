@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/lib/session"
 import { placeOrderForUser } from "@/lib/orders"
-import { stripe, stripeEnabled, STRIPE_CURRENCY, toMinorUnits } from "@/lib/stripe"
+import { stripe, stripeEnabled, STRIPE_CURRENCY } from "@/lib/stripe"
 import { getBaseUrl } from "@/lib/url"
 import { sendOrderConfirmationEmail } from "@/lib/email"
+import { isCurrencyCode, normalizeCurrency, toStripeMinorUnits, type CurrencyCode } from "@/lib/currency"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -29,7 +30,14 @@ export async function POST(req: Request) {
     addressId: typeof body.addressId === "string" ? body.addressId : undefined,
     paymentMethodId: typeof body.paymentMethodId === "string" ? body.paymentMethodId : undefined,
     couponCode: typeof body.couponCode === "string" ? body.couponCode : undefined,
+    redeemPoints: typeof body.redeemPoints === "number" ? body.redeemPoints : undefined,
   }
+
+  // Order totals are stored in the base currency (EUR). Charge in the shopper's
+  // selected display currency, converting at the static reference rate.
+  const chargeCurrency: CurrencyCode = isCurrencyCode(body.currency)
+    ? body.currency
+    : normalizeCurrency(STRIPE_CURRENCY.toUpperCase())
 
   // --- Stripe path: create a PENDING order (no stock/cart changes yet), then a
   // hosted Checkout Session. Inventory + cart commit only once payment confirms. ---
@@ -58,9 +66,10 @@ export async function POST(req: Request) {
           {
             quantity: 1,
             price_data: {
-              currency: STRIPE_CURRENCY,
-              // Charge the exact server-computed total (after discount + shipping).
-              unit_amount: toMinorUnits(order.total),
+              currency: chargeCurrency.toLowerCase(),
+              // Charge the exact server-computed total (after discount + shipping),
+              // converted from the base currency into the shopper's currency.
+              unit_amount: toStripeMinorUnits(order.total, chargeCurrency),
               product_data: {
                 name: `BuyME Order #${orderNo} (${order.items.length} item${order.items.length === 1 ? "" : "s"})`,
               },

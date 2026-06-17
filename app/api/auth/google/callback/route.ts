@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { sendWelcomeEmail } from "@/lib/email"
 import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from "@/lib/auth"
 import { recordLogin } from "@/lib/login-events"
+import { randomAvatarUrl } from "@/lib/avatar"
+import { issueWelcomeCoupon } from "@/lib/welcome-coupon"
 import {
   GOOGLE_TOKEN_URL,
   GOOGLE_USERINFO_URL,
@@ -61,11 +63,12 @@ export async function GET(req: Request) {
         email,
         name: info.name || email.split("@")[0],
         role: "user",
-        avatar: info.picture || null,
+        avatar: info.picture || randomAvatarUrl(email),
       },
     })
-    // New account via Google — send a welcome email (fire-and-forget).
-    sendWelcomeEmail(user.email, user.name).catch(() => {})
+    // New account via Google — one welcome coupon + welcome email (fire-and-forget).
+    const welcomeCoupon = await issueWelcomeCoupon()
+    sendWelcomeEmail(user.email, user.name, welcomeCoupon ?? undefined).catch(() => {})
   }
 
   const token = await createSessionToken({

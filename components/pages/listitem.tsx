@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { featuredProducts } from "@/public/data/shop"
 import { useCart } from "@/hooks/cartcontext"
 import { useWishlist } from "@/hooks/wishlistcontext"
+import { Price } from "@/components/ui/price"
 
 export default function ProductGrid() {
   const { addToCart } = useCart()
@@ -41,7 +42,7 @@ export default function ProductGrid() {
                 <Link href={`/product/${product.slug}`} className="min-w-0">
                   <p className="text-sm text-gray-400">{product.category}</p>
                   <p className="font-semibold text-white truncate">{product.name}</p>
-                  <p className="font-semibold text-white mt-1">${product.price.toFixed(2)}</p>
+                  <Price amount={product.price} className="font-semibold text-white mt-1 block" />
                 </Link>
                 <div className="flex space-x-2 shrink-0">
                   <Button

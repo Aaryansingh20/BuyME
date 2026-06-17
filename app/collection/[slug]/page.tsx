@@ -5,9 +5,26 @@ import Link from "next/link"
 import { Check } from "lucide-react"
 import { notFound } from "next/navigation"
 import { collections, getCollection, getCollectionProducts } from "@/public/data/collections"
+import { Price } from "@/components/ui/price"
+import type { Metadata } from "next"
 
 export function generateStaticParams() {
   return collections.map((c) => ({ slug: c.slug }))
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const collection = getCollection(params.slug)
+  if (!collection) return { title: "Collection not found" }
+  return {
+    title: collection.title,
+    description: collection.description,
+    alternates: { canonical: `/collection/${collection.slug}` },
+    openGraph: {
+      title: collection.title,
+      description: collection.description,
+      images: [{ url: collection.hero.src, alt: collection.title }],
+    },
+  }
 }
 
 export default function CollectionPage({ params }: { params: { slug: string } }) {
@@ -78,7 +95,7 @@ export default function CollectionPage({ params }: { params: { slug: string } })
                 </div>
                 <p className="text-xs uppercase tracking-wider text-gray-400">{product.category}</p>
                 <p className="font-semibold text-white">{product.name}</p>
-                <p className="mt-1 font-semibold text-white">${product.price.toFixed(2)}</p>
+                <Price amount={product.price} className="mt-1 block font-semibold text-white" />
               </Link>
             ))}
           </div>
