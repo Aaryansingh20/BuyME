@@ -3,6 +3,7 @@
 import { CartProvider } from "@/hooks/cartcontext";
 import { WishlistProvider } from "@/hooks/wishlistcontext";
 import { CurrencyProvider } from "@/hooks/currencycontext";
+import { ChatWidget } from "@/components/chat/chat-widget";
 import type { CurrencyCode } from "@/lib/currency";
 
 export function Providers({
@@ -15,7 +16,10 @@ export function Providers({
   return (
     <CurrencyProvider initialCurrency={initialCurrency}>
       <CartProvider>
-        <WishlistProvider>{children}</WishlistProvider>
+        <WishlistProvider>
+          {children}
+          <ChatWidget />
+        </WishlistProvider>
       </CartProvider>
     </CurrencyProvider>
   );
