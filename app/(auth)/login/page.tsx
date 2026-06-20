@@ -60,8 +60,12 @@ export default function LoginPage() {
         setError(data.error ?? "Unable to sign in")
         return
       }
+      // Return the shopper to wherever they were headed (e.g. /checkout). Only
+      // accept same-site relative paths so this can't be used as an open redirect.
+      const fromRaw = new URLSearchParams(window.location.search).get("from") ?? ""
+      const from = fromRaw.startsWith("/") && !fromRaw.startsWith("//") ? fromRaw : ""
       // Full reload so the cart (and any user state) loads fresh for this account.
-      window.location.assign(data.role === "admin" ? "/admin" : "/")
+      window.location.assign(data.role === "admin" ? "/admin" : from || "/")
     } catch {
       setError("Something went wrong. Please try again.")
     } finally {

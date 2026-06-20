@@ -4,14 +4,20 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth"
 
 const AUTH_PAGES = ["/login", "/register", "/forgot-password", "/reset-password"]
 
+// Pages that genuinely need an identity. Everything else — the storefront,
+// product pages, cart and wishlist — is open to guests so they can browse and
+// build a cart without an account; login is only required to pay/checkout.
+const PROTECTED_PREFIXES = ["/admin", "/checkout", "/product/profile"]
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const session = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value)
   const isAuthPage = AUTH_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"))
+  const requiresAuth = PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))
 
-  // Not signed in: only the auth pages are reachable.
+  // Not signed in: storefront is browsable; only protected pages bounce to login.
   if (!session) {
-    if (isAuthPage) return NextResponse.next()
+    if (!requiresAuth) return NextResponse.next()
     const url = req.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("from", pathname)
